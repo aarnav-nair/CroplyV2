@@ -1,2 +1,5 @@
 .env.local.txt 
 .env.local 
+.env
+backend/.env
+frontend/.env

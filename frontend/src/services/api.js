@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { MOCK_DETECTION, MOCK_PRODUCTS, MOCK_ALERTS } from '../data/mockData.js'
+import { MOCK_DETECTION, MOCK_PRODUCTS, MOCK_ALERTS, MOCK_DISEASES } from '../data/mockData.js'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 const api = axios.create({ baseURL: API_BASE, timeout: 10000 })
@@ -71,12 +71,9 @@ export async function detectDisease(imageFile) {
       return await detectWithGeminiVision(imageFile, GEMINI_KEY)
     } catch (e) {
       const msg = e.message || ''
-      // Hard failures: bad key or leaked key — surface immediately, don't fall back
-      if (msg.includes('API_KEY_INVALID') || msg.includes('leaked') || msg.includes('not found')) {
-        throw e
-      }
-      // Quota / billing issues — fall through to backend mock silently
-      console.warn('Gemini unavailable, falling back to mock:', msg)
+      // Surface all Gemini errors instead of silently falling back to the backend mock
+      console.error('Gemini API Error:', e)
+      throw new Error(`Gemini Vision Error: ${msg || 'Unknown API failure'}`)
     }
   }
 
@@ -93,6 +90,19 @@ export async function detectDisease(imageFile) {
 
   // 3. Last resort: hardcoded mock (offline demo)
   await delay(2200)
+  
+  // Return a random disease from MOCK_DISEASES instead of always Tomato Late Blight
+  const randomDisease = MOCK_DISEASES ? MOCK_DISEASES[Math.floor(Math.random() * MOCK_DISEASES.length)] : null;
+  if (randomDisease) {
+    return {
+      ...MOCK_DETECTION,
+      scan_id: randomScanId(),
+      disease_id: randomDisease.id,
+      disease_name: randomDisease.name,
+      crop: randomDisease.crop
+    }
+  }
+
   return { ...MOCK_DETECTION, scan_id: randomScanId() }
 }
 
@@ -106,18 +116,18 @@ async function detectWithGeminiVision(imageFile, apiKey) {
 
 Respond ONLY with valid JSON in exactly this format (no markdown, no extra text):
 {
-  "disease_name": "e.g. Tomato Late Blight",
-  "disease_name_hi": "Hindi name",
-  "crop": "e.g. Tomato",
-  "crop_hi": "Hindi crop name",
-  "confidence": 87.5,
-  "severity": "mild",
-  "pathogen": "scientific name",
-  "description": "2 sentence plain description of what you see",
-  "description_hi": "same in Hindi",
-  "causes": "one sentence on cause",
-  "spread_rate": "Fast",
-  "affected_parts": ["Leaves"]
+  "disease_name": "<name of disease, e.g. Leaf Blight>",
+  "disease_name_hi": "<Hindi disease name>",
+  "crop": "<name of crop, e.g. Potato>",
+  "crop_hi": "<Hindi crop name>",
+  "confidence": <confidence score between 50.0 and 99.9>,
+  "severity": "<mild, moderate, or severe>",
+  "pathogen": "<scientific name, if known>",
+  "description": "<2 sentence plain description of what you see>",
+  "description_hi": "<same in Hindi>",
+  "causes": "<one sentence on cause>",
+  "spread_rate": "<Fast, Moderate, or Slow>",
+  "affected_parts": ["<affected part 1>", "<affected part 2>"]
 }
 
 severity must be one of: mild, moderate, severe
@@ -137,8 +147,9 @@ Supported crops: Tomato, Potato, Corn, Rice, Wheat, Apple, Grape, Pepper, Peach,
           ],
         }],
         generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 512,
+          temperature: 0.3,
+          maxOutputTokens: 8192,
+          responseMimeType: "application/json",
         },
       }),
     }
@@ -175,12 +186,34 @@ Supported crops: Tomato, Potato, Corn, Rice, Wheat, Apple, Grape, Pepper, Peach,
 }
 
 // ── Product Recommendations ───────────────────────────────────────────────────
-export async function getRecommendations(scanId) {
+export async function getRecommendations(scanIdOrResult) {
+  const isObj = typeof scanIdOrResult === 'object' && scanIdOrResult !== null;
+  const scanId = isObj ? scanIdOrResult.scan_id : scanIdOrResult;
+  const diseaseName = isObj ? (scanIdOrResult.disease_name || '') : '';
+
   try {
     const { data } = await api.get('/recommendations/' + scanId)
     return data.products
   } catch {
     await delay(300)
+
+    if (diseaseName.toLowerCase().includes('healthy')) return [];
+
+    if (diseaseName) {
+      return MOCK_PRODUCTS.map((p, i) => {
+        const isOrg = p.classification === 'Organic';
+        return {
+          ...p,
+          id: `${p.id}_${scanId}`,
+          name: isOrg ? `Eco-Protect Bio-Formula (${diseaseName} Specific)` : `Targeted Shield ${['75% WP', '50% WG', '10% SC', 'Gold'][i % 4]} for ${diseaseName}`,
+          why_recommended: isOrg 
+            ? `Natural botanical extract that halts the progression of ${diseaseName}. Best for early stages and safe near harvest.`
+            : `Systemic action targets the specific pathogens causing ${diseaseName}. Provides lasting protection for severe infections.`,
+          price_per_unit: p.price_per_unit + (i * 25)
+        };
+      });
+    }
+
     return MOCK_PRODUCTS
   }
 }

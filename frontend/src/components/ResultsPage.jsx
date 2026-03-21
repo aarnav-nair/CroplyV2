@@ -269,11 +269,11 @@ export default function ResultsPage({ result, imagePreview, onAddToCart, onNavig
   const SevIcon = sev.icon
 
   useEffect(() => {
-    getRecommendations(result.scan_id).then(p => {
+    getRecommendations(result).then(p => {
       setProducts(p)
       setLoading(false)
     })
-  }, [result.scan_id])
+  }, [result])
 
   return (
     <div className="container py-10">

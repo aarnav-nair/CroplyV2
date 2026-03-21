@@ -8,9 +8,8 @@ const SEV = {
 }
 
 export default function HistoryPage({ onNavigate, lang, scanHistory = [], orders = [], onClearHistory }) {
-  const [localHistory] = useState(scanHistory)
 
-  if (localHistory.length === 0) {
+  if (scanHistory.length === 0) {
     return (
       <div className="container py-10 max-w-2xl">
         <div className="flex items-start gap-3 mb-8">
@@ -73,8 +72,8 @@ export default function HistoryPage({ onNavigate, lang, scanHistory = [], orders
   }
 
   // Has scan history
-  const totalProducts = localHistory.reduce((s,h) => s + (h.products||[]).length, 0)
-  const resolved = localHistory.filter(h => h.resolved).length
+  const totalProducts = scanHistory.reduce((s,h) => s + (h.products||[]).length, 0)
+  const resolved = scanHistory.filter(h => h.resolved).length
 
   return (
     <div className="container py-10 max-w-2xl">
@@ -88,7 +87,7 @@ export default function HistoryPage({ onNavigate, lang, scanHistory = [], orders
             {lang==='hi'?'स्कैन इतिहास':'Scan History'}
           </h1>
           <p className="font-body text-sm" style={{color:'var(--muted)'}}>
-            {localHistory.length} {lang==='hi'?'स्कैन':'scans'} · {resolved} {lang==='hi'?'ठीक हुई':'resolved'}
+            {scanHistory.length} {lang==='hi'?'स्कैन':'scans'} · {resolved} {lang==='hi'?'ठीक हुई':'resolved'}
           </p>
         </div>
       </div>
@@ -96,7 +95,7 @@ export default function HistoryPage({ onNavigate, lang, scanHistory = [], orders
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         {[
-          { val:localHistory.length, label:lang==='hi'?'कुल स्कैन':'Total Scans', icon:'🔍', color:'var(--surface)' },
+          { val:scanHistory.length, label:lang==='hi'?'कुल स्कैन':'Total Scans', icon:'🔍', color:'var(--surface)' },
           { val:resolved,            label:lang==='hi'?'ठीक हुई':'Resolved',      icon:'✅', color:'var(--surface)' },
           { val:totalProducts,       label:lang==='hi'?'उत्पाद खरीदे':'Products Bought', icon:'💊', color:'var(--surface)' },
         ].map(s => (
@@ -110,7 +109,7 @@ export default function HistoryPage({ onNavigate, lang, scanHistory = [], orders
 
       {/* Scan list */}
       <div className="space-y-4">
-        {localHistory.map((scan, i) => {
+        {scanHistory.map((scan, i) => {
           const sev = SEV[scan.severity] || SEV.mild
           const SevIcon = sev.icon
           return (

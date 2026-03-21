@@ -6,9 +6,10 @@ import ResultsPage from './components/ResultsPage.jsx'
 import CartPage from './components/CartPage.jsx'
 import AlertMapPage from './components/AlertMapPage.jsx'
 import HistoryPage from './components/HistoryPage.jsx'
+import LandingPage from './components/LandingPage.jsx'
+import NavBot from './components/NavBot.jsx'
 import toast from 'react-hot-toast'
 
-// ── Persistent state helper ───────────────────────────────────────────────────
 function useLocalState(key, defaultValue) {
   const [state, setState] = useState(() => {
     try {
@@ -16,26 +17,24 @@ function useLocalState(key, defaultValue) {
       return stored ? JSON.parse(stored) : defaultValue
     } catch { return defaultValue }
   })
-
   useEffect(() => {
     try { localStorage.setItem(key, JSON.stringify(state)) }
     catch {}
   }, [key, state])
-
   return [state, setState]
 }
 
 export default function App() {
-  const [view, setView]             = useState('home')
+  const [view, setView]         = useState('home')
   const [scanResult, setScanResult] = useState(null)
   const [imgPreview, setImgPreview] = useState(null)
+  const [showLanding, setShowLanding] = useState(true)
 
-  // Persisted across reloads
-  const [lang, setLang]           = useLocalState('croply-lang', 'en')
-  const [theme, setTheme]         = useLocalState('croply-theme', 'light')
-  const [cart, setCart]           = useLocalState('croply-cart', [])
+  const [lang, setLang]             = useLocalState('croply-lang', 'en')
+  const [theme, setTheme]           = useLocalState('croply-theme', 'light')
+  const [cart, setCart]             = useLocalState('croply-cart', [])
   const [scanHistory, setScanHistory] = useLocalState('croply-history', [])
-  const [orders, setOrders]       = useLocalState('croply-orders', [])
+  const [orders, setOrders]         = useLocalState('croply-orders', [])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -70,7 +69,6 @@ export default function App() {
         return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)
       }
       toast.success('Added to cart')
-      // Record product in most recent scan
       setScanHistory(h => h.length
         ? h.map((s, i) => i === 0 ? { ...s, products: [...new Set([...s.products, product.name])] } : s)
         : h)
@@ -84,6 +82,13 @@ export default function App() {
   }
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0)
+
+  // Show landing screen first
+  if (showLanding) {
+    return <LandingPage onComplete={() => {
+      setShowLanding(false)
+    }} />
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', transition: 'background 0.25s' }}>
@@ -124,6 +129,7 @@ export default function App() {
           />
         )}
       </main>
+      <NavBot onNavigate={navigate} lang={lang} />
     </div>
   )
 }

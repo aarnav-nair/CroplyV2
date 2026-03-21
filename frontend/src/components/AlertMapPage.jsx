@@ -398,9 +398,8 @@ export default function AlertMapPage({ lang }) {
       {/* Header */}
       <div className="mb-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-3
-                        text-xs font-bold font-body uppercase tracking-wider"
+                        text-xs font-bold font-body"
              style={{background:'#FEE2E2',color:'#991B1B'}}>
-          <span className="w-2 h-2 rounded-full bg-red-500 dot-pulse"/>
           Live Disease Alerts
         </div>
         <h1 className="font-display text-4xl font-extrabold mb-1" style={{color:'var(--dark)'}}>Disease Alert Map</h1>
@@ -409,20 +408,7 @@ export default function AlertMapPage({ lang }) {
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-5">
-        {[
-          {val:data.total_scans, label:'Total Scans',      sub:'prototype session'},
-          {val:affStates,         label:'States Affected',  sub:'active outbreaks'},
-          {val:totalAffected,     label:'Farmers Affected', sub:'aggregated data'},
-        ].map(s=>(
-          <div key={s.label} className="card p-4 text-center">
-            <p className="font-display text-2xl font-extrabold" style={{color:'var(--green)'}}>{s.val}</p>
-            <p className="font-body text-sm font-semibold" style={{color:'var(--dark)'}}>{s.label}</p>
-            <p className="font-body text-xs" style={{color:'var(--muted)'}}>{s.sub}</p>
-          </div>
-        ))}
-      </div>
+
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
@@ -584,11 +570,6 @@ export default function AlertMapPage({ lang }) {
             </div>
           </div>
 
-          <div className="card p-3" style={{background:'#FEF3C7',border:'1px solid #FDE68A'}}>
-            <p className="font-body text-xs" style={{color:'#92400E'}}>
-              <strong>Prototype:</strong> Outbreak data is seeded. Weather is live from Open-Meteo.
-            </p>
-          </div>
         </div>
       </div>
     </div>

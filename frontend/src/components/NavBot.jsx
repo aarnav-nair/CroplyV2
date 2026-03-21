@@ -391,7 +391,7 @@ export default function NavBot({ onNavigate, lang }) {
             {showChips && (
               <div className="pt-1 space-y-1.5">
                 <p
-                  className="text-[10px] font-body font-bold uppercase tracking-wider px-1"
+                  className="text-[11px] font-body font-bold text-center px-1 mb-2"
                   style={{ color: "var(--muted)" }}
                 >
                   {lang === "hi" ? "सुझाए गए सवाल" : "Try asking"}
@@ -418,7 +418,7 @@ export default function NavBot({ onNavigate, lang }) {
 
           {/* Quick nav actions */}
           <div
-            className="px-3 py-2 flex gap-1.5 overflow-x-auto flex-shrink-0"
+            className="px-3 py-3 grid grid-cols-2 gap-2 flex-shrink-0"
             style={{
               borderTop: "1px solid var(--border)",
               background: "var(--surface)",
@@ -431,14 +431,14 @@ export default function NavBot({ onNavigate, lang }) {
                   onNavigate(a.view);
                   setOpen(false);
                 }}
-                className="flex-shrink-0 text-[11px] font-body font-semibold px-2.5 py-1.5 rounded-lg transition-colors"
+                className="flex items-center justify-center gap-1.5 text-xs font-body font-bold py-2.5 rounded-xl transition-colors hover:bg-black/5"
                 style={{
                   background: "var(--bg)",
-                  border: "1px solid var(--border)",
                   color: "var(--dark)",
                 }}
               >
-                {a.emoji} {lang === "hi" ? a.label_hi : a.label}
+                <span className="text-base">{a.emoji}</span>
+                {lang === "hi" ? a.label_hi : a.label}
               </button>
             ))}
           </div>

@@ -26,8 +26,6 @@ const LOSS_LABEL = ['5–10%', '15–30%', '40–65%', '80–100%']
 
 export default function DiseaseProgressionTracker({ result, lang }) {
   const hi     = lang === 'hi'
-  const ref    = useRef(null)
-  const [vis, setVis] = useState(false)
 
   const spread = getSpreadFactor(result.spread_rate)
   const base   = getSeverityScore(result.severity)
@@ -42,17 +40,8 @@ export default function DiseaseProgressionTracker({ result, lang }) {
   const DAYS    = hi ? ['अभी', '3 दिन', '7 दिन', '14 दिन'] : ['Now', 'Day 3', 'Day 7', 'Day 14']
   const LEVELS  = hi ? LEVELS_HI : LEVELS_EN
 
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect() } },
-      { threshold: 0.2 }
-    )
-    if (ref.current) obs.observe(ref.current)
-    return () => obs.disconnect()
-  }, [])
-
   return (
-    <div ref={ref} className="card">
+    <div className="card">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <TrendingUp className="w-4 h-4 text-amber-500 flex-shrink-0" />
@@ -72,13 +61,10 @@ export default function DiseaseProgressionTracker({ result, lang }) {
           const isNow = i === 0
           return (
             <div key={i}
-                 className="flex flex-col items-center gap-1 rounded-xl py-3 px-1 transition-all duration-500"
+                 className="flex flex-col items-center gap-1 rounded-xl py-3 px-1"
                  style={{
                    background: color + (isNow ? '18' : '0f'),
                    border: `1.5px solid ${color}${isNow ? '55' : '33'}`,
-                   opacity: vis ? 1 : 0,
-                   transform: vis ? 'translateY(0)' : 'translateY(8px)',
-                   transitionDelay: `${i * 80}ms`,
                  }}>
               {/* Day */}
               <span className="font-body text-[10px] font-bold"
@@ -104,11 +90,10 @@ export default function DiseaseProgressionTracker({ result, lang }) {
 
       {/* Single progress bar showing escalation */}
       <div className="h-1.5 rounded-full overflow-hidden mb-3" style={{ background: 'var(--border)' }}>
-        <div className="h-full rounded-full transition-all duration-1000 ease-out"
+        <div className="h-full rounded-full"
              style={{
-               width: vis ? '100%' : '0%',
+               width: '100%',
                background: `linear-gradient(to right, ${COLORS[0]}, ${COLORS[1]}, ${COLORS[2]}, ${COLORS[3]})`,
-               transitionDelay: '300ms',
              }} />
       </div>
 

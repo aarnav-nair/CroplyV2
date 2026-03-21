@@ -144,23 +144,7 @@ const SEV = {
   severe:   { label:'Severe',   label_hi:'गंभीर', cls:'sev-severe',   icon:Zap,           desc:'Critical — immediate treatment is essential.' },
 }
 
-function ConfidenceRing({ pct }) {
-  const r = 28, circ = 2*Math.PI*r
-  const dash = (pct/100)*circ
-  return (
-    <div className="relative inline-flex items-center justify-center w-20 h-20">
-      <svg className="rotate-[-90deg]" width="80" height="80" viewBox="0 0 80 80">
-        <circle cx="40" cy="40" r={r} fill="none" stroke="#E4E0D8" strokeWidth="7"/>
-        <circle cx="40" cy="40" r={r} fill="none" stroke="var(--green-lt)" strokeWidth="7"
-                strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-                style={{transition:'stroke-dasharray 1.2s cubic-bezier(0.22,1,0.36,1)'}}/>
-      </svg>
-      <div className="absolute text-center">
-        <span className="font-display text-base font-extrabold" style={{color:'var(--green)'}}>{pct}%</span>
-      </div>
-    </div>
-  )
-}
+
 
 function ProductCard({ product, onAddToCart, lang }) {
   const [expanded, setExpanded] = useState(false)
@@ -177,15 +161,9 @@ function ProductCard({ product, onAddToCart, lang }) {
       {/* Top row */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap gap-1.5 mb-2">
+          <div className="flex flex-wrap gap-2 mb-1.5">
             {product.organic_certified && (
-              <span className="badge-green"><Leaf className="w-3 h-3"/>Organic</span>
-            )}
-            {product.verified_seller && (
-              <span className="badge-blue"><Shield className="w-3 h-3"/>Verified</span>
-            )}
-            {product.govt_empanelled && (
-              <span className="badge-purple">🏛 Govt. Empanelled</span>
+              <span className="text-[10px] font-body font-bold uppercase tracking-wider text-green-700">Organic Certified</span>
             )}
           </div>
           <h4 className="font-display text-base font-bold leading-snug" style={{color:'var(--dark)'}}>
@@ -325,23 +303,22 @@ export default function ResultsPage({ result, imagePreview, onAddToCart, onNavig
               )}
               <div className="absolute inset-0"
                    style={{background:'linear-gradient(180deg,transparent 50%,rgba(0,0,0,0.5) 100%)'}}/>
-              <div className="absolute bottom-3 left-3 flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
-                   style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(8px)'}}>
-                <div className="w-2 h-2 rounded-full bg-red-400"/>
-                <span className="text-white text-xs font-body font-semibold">Grad-CAM Overlay</span>
+              <div className="absolute bottom-3 left-3 px-2.5 py-1.5 rounded-lg"
+                   style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(4px)'}}>
+                <span className="text-white text-[10px] font-body font-bold uppercase tracking-wider">Analysis Overlay</span>
               </div>
             </div>
 
             {/* Confidence */}
-            <div className="p-4 flex items-center gap-4">
-              <ConfidenceRing pct={result.confidence}/>
-              <div>
-                <p className="font-body text-xs font-bold uppercase tracking-wider mb-0.5" style={{color:'var(--muted)'}}>
-                  {lang==='hi'?'AI विश्वास स्तर':'AI Confidence Score'}
-                </p>
-                <p className="font-body text-sm" style={{color:'var(--dark)'}}>
-                  Based on EfficientNet-B0 softmax probability
-                </p>
+            <div className="p-4 flex flex-col justify-center border-t" style={{borderColor:'var(--border)'}}>
+              <p className="font-body text-xs font-bold uppercase tracking-wider mb-2" style={{color:'var(--muted)'}}>
+                {lang==='hi'?'AI विश्वास स्तर':'AI Confidence'}
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{background:'var(--bg)'}}>
+                  <div className="h-full rounded-full" style={{width:`${result.confidence}%`, background:'var(--green-lt)'}}/>
+                </div>
+                <span className="font-body text-sm font-bold" style={{color:'var(--dark)'}}>{Math.round(result.confidence)}%</span>
               </div>
             </div>
           </div>

@@ -48,25 +48,6 @@ export default function HistoryPage({ onNavigate, lang, scanHistory = [], orders
           </button>
         </div>
 
-        {/* What you'll see */}
-        <div className="card mt-6 p-5" style={{background:'var(--bg)', border:'1px solid var(--border)'}}>
-          <p className="font-body text-xs font-bold uppercase tracking-wider mb-3" style={{color:'var(--muted)'}}>
-            {lang==='hi'?'इतिहास में क्या दिखेगा':'What your history will show'}
-          </p>
-          <div className="space-y-2">
-            {[
-              {icon:'🔍', label: lang==='hi'?'हर स्कैन की जानकारी':'Each scan with disease name and severity'},
-              {icon:'📊', label: lang==='hi'?'AI विश्वास स्तर':'AI confidence score per diagnosis'},
-              {icon:'💊', label: lang==='hi'?'खरीदे गए उत्पाद':'Products ordered for each outbreak'},
-              {icon:'✅', label: lang==='hi'?'बीमारी ठीक हुई या नहीं':'Whether the disease was resolved'},
-            ].map(d => (
-              <div key={d.label} className="flex items-center gap-3">
-                <span className="text-base">{d.icon}</span>
-                <p className="font-body text-sm" style={{color:'var(--dark)'}}>{d.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     )
   }

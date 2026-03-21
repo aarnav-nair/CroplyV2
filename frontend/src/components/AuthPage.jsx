@@ -2,50 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Leaf, Eye, EyeOff, Loader2, User, Mail, Phone, Lock, ArrowRight, UserCheck } from 'lucide-react'
 import { authRegister, authLogin, authGuest } from '../services/api.js'
 
-// ── Slide+blur animator ───────────────────────────────────────────────────────
-// Wraps children and animates them in/out with a horizontal slide + blur whenever `id` changes.
-function SlidePanel({ id, children }) {
-  const [displayed, setDisplayed] = useState({ id, children })
-  const [phase, setPhase]         = useState('idle') // idle | exit | enter
-  const [dir, setDir]             = useState(1)       // 1 = new comes from right, -1 from left
-  const prevId = useRef(id)
-  const timer  = useRef(null)
 
-  useEffect(() => {
-    if (id === prevId.current) return
-    const goingForward = id === 'signup' || (id === 'guest' && prevId.current !== 'signup')
-    setDir(goingForward ? 1 : -1)
-    setPhase('exit')
-
-    timer.current = setTimeout(() => {
-      setDisplayed({ id, children })
-      setPhase('enter')
-      timer.current = setTimeout(() => setPhase('idle'), 20) // next frame → triggers CSS transition in
-    }, 320) // exit duration
-
-    prevId.current = id
-    return () => clearTimeout(timer.current)
-  }, [id])
-
-  // Also update children content if same tab re-renders
-  useEffect(() => {
-    if (phase === 'idle') setDisplayed({ id, children })
-  }, [children, phase])
-
-  const exitTransform  = `translateX(${dir * -60}px)`
-  const enterTransform = `translateX(${dir *  60}px)`
-
-  const style = {
-    transition: phase === 'idle' ? 'transform 0.55s cubic-bezier(0.22,1,0.36,1), opacity 0.55s ease, filter 0.55s ease' : 'none',
-    transform:  phase === 'exit'  ? exitTransform
-              : phase === 'enter' ? enterTransform
-              : 'translateX(0)',
-    opacity:    phase !== 'idle'  ? 0 : 1,
-    filter:     phase !== 'idle'  ? 'blur(10px)' : 'blur(0px)',
-  }
-
-  return <div style={style}>{displayed.children}</div>
-}
 
 // ── Input field ───────────────────────────────────────────────────────────────
 function Field({ icon: Icon, label, type = 'text', value, onChange, placeholder, error }) {
@@ -251,13 +208,7 @@ export default function AuthPage({ onAuth, lang }) {
       <div className="hidden lg:flex flex-col justify-between w-[45%] relative overflow-hidden p-12"
            style={{ background: 'linear-gradient(160deg, #0F1F13 0%, #1A3526 60%, #0D1A10 100%)' }}>
 
-        {/* Decorative glows */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-10"
-             style={{ background: 'radial-gradient(circle, #52B788 0%, transparent 70%)' }} />
-        <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full opacity-10"
-             style={{ background: 'radial-gradient(circle, #2D6A4F 0%, transparent 70%)' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.04]"
-             style={{ background: 'radial-gradient(circle, #52B788 0%, transparent 70%)' }} />
+
 
         {/* Logo */}
         <div className="flex items-center gap-3 relative z-10">
@@ -325,12 +276,11 @@ export default function AuthPage({ onAuth, lang }) {
         <div className="w-full max-w-sm">
 
           {/* Heading — slides with the form */}
-          <SlidePanel id={tab + '-heading'}>
-            <div className="mb-8">
-              <h2 className="font-display text-2xl font-bold text-white mb-1">{h.title}</h2>
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>{h.sub}</p>
-            </div>
-          </SlidePanel>
+          {/* Heading */}
+          <div className="mb-8">
+            <h2 className="font-display text-2xl font-bold text-white mb-1">{h.title}</h2>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>{h.sub}</p>
+          </div>
 
           {/* Tab switcher pill */}
           <div className="relative flex rounded-xl p-1 mb-6"
@@ -355,12 +305,11 @@ export default function AuthPage({ onAuth, lang }) {
           </div>
 
           {/* ── Animated form area ── */}
-          <div className="mb-5 overflow-hidden">
-            <SlidePanel id={tab}>
-              {tab === 'login'  && <LoginForm  onAuth={onAuth} lang={lang} />}
-              {tab === 'signup' && <SignupForm onAuth={onAuth} lang={lang} />}
-              {tab === 'guest'  && <GuestPanel onAuth={onAuth} lang={lang} />}
-            </SlidePanel>
+          {/* ── Form area ── */}
+          <div className="mb-5">
+            {tab === 'login'  && <LoginForm  onAuth={onAuth} lang={lang} />}
+            {tab === 'signup' && <SignupForm onAuth={onAuth} lang={lang} />}
+            {tab === 'guest'  && <GuestPanel onAuth={onAuth} lang={lang} />}
           </div>
 
           {/* Divider + guest button (only when not already on guest) */}

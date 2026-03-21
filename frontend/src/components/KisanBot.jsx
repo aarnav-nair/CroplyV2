@@ -68,7 +68,7 @@ export default function KisanBot({ result, lang }) {
           </p>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-green-300 dot-pulse"/>
+          <span className="w-2 h-2 rounded-full bg-green-300"/>
           <span className="text-xs font-body" style={{color:'rgba(255,255,255,0.6)'}}>Online</span>
         </div>
       </div>

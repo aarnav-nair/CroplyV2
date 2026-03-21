@@ -28,11 +28,7 @@ export default function HomePage({ onNavigate, lang }) {
     <div>
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <section style={{background:'var(--hero-bg)'}} className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.04]"
-             style={{backgroundImage:`linear-gradient(var(--green-lt) 1px,transparent 1px),linear-gradient(90deg,var(--green-lt) 1px,transparent 1px)`,backgroundSize:'48px 48px'}}/>
-        <div className="absolute inset-0"
-             style={{background:'radial-gradient(ellipse 60% 70% at 65% 50%, rgba(82,183,136,0.07) 0%, transparent 70%)'}}/>
+      <section style={{background:'var(--hero-bg)'}} className="relative">
 
         <div className="container relative py-20 md:py-28">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -41,7 +37,6 @@ export default function HomePage({ onNavigate, lang }) {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-6
                               border border-green-lt/20 bg-green-lt/8">
-                <span className="w-2 h-2 rounded-full bg-green-lt dot-pulse"/>
                 <span className="text-green-lt text-xs font-body font-semibold tracking-wider uppercase">
                   {lang==='hi'?'किसानों के लिए AI':'Click. Detect. Act.'}
                 </span>
@@ -74,7 +69,7 @@ export default function HomePage({ onNavigate, lang }) {
             </div>
 
             {/* Right — result preview card */}
-            <div className="relative">
+            <div className="relative w-full max-w-[420px] mx-auto lg:ml-auto lg:mr-0">
               <div style={{background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)'}}
                    className="rounded-2xl p-5 shadow-2xl">
                 <div className="flex items-center gap-2 mb-4">
@@ -153,21 +148,17 @@ export default function HomePage({ onNavigate, lang }) {
 
           <div className="grid md:grid-cols-3 gap-4 mb-16">
             {[
-              { pct:'20–40%', label:'of annual yield', label_hi:'वार्षिक उत्पादन', sub:'lost to crop diseases each season', icon:'📉', bg:'#FEE2E2', color:'#991B1B' },
-              { pct:'58%',    label:'of India\'s people', label_hi:'भारत की जनसंख्या', sub:'are directly dependent on farming', icon:'🧑‍🌾', bg:'#FEF3C7', color:'#92400E' },
-              { pct:'72 hrs', label:'critical window', label_hi:'महत्वपूर्ण समय', sub:'before disease spreads irreversibly', icon:'⏱', bg:'#DBEAFE', color:'#1E40AF' },
+              { pct:'20–40%', label:'of annual yield', label_hi:'वार्षिक उत्पादन', sub:'lost to crop diseases each season', bg:'#FEE2E2', color:'#991B1B' },
+              { pct:'58%',    label:'of India\'s people', label_hi:'भारत की जनसंख्या', sub:'are directly dependent on farming', bg:'#FEF3C7', color:'#92400E' },
+              { pct:'72 hrs', label:'critical window', label_hi:'महत्वपूर्ण समय', sub:'before disease spreads irreversibly', bg:'#DBEAFE', color:'#1E40AF' },
             ].map(s => (
-              <div key={s.pct} className="card p-5 flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-                     style={{background:s.bg}}>
-                  {s.icon}
-                </div>
+              <div key={s.pct} className="card p-5">
                 <div>
-                  <p className="font-display text-3xl font-extrabold" style={{color:s.color}}>{s.pct}</p>
+                  <p className="font-display text-3xl font-extrabold mb-1" style={{color:s.color}}>{s.pct}</p>
                   <p className="font-body font-semibold text-sm" style={{color:'var(--dark)'}}>
                     {lang==='hi'?s.label_hi:s.label}
                   </p>
-                  <p className="font-body text-xs mt-0.5 leading-snug" style={{color:'var(--muted)'}}>{s.sub}</p>
+                  <p className="font-body text-xs mt-1 leading-relaxed" style={{color:'var(--muted)'}}>{s.sub}</p>
                 </div>
               </div>
             ))}
@@ -188,22 +179,21 @@ export default function HomePage({ onNavigate, lang }) {
 
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { n:'01', icon:'📸',
+              { n:'01',
                 title: lang==='hi'?'पत्ती की फोटो अपलोड करें':'Upload a leaf photo',
                 body: lang==='hi'?'बीमार पत्ती की साफ तस्वीर खींचें।':'Take a clear photo of the affected leaf and upload it — drag, drop, or capture directly.' },
-              { n:'02', icon:'🧠',
+              { n:'02',
                 title: lang==='hi'?'AI बीमारी पहचानता है':'AI identifies the disease',
                 body: lang==='hi'?'मॉडल बीमारी, गंभीरता और रोगाणु पहचानता है।':'The model identifies disease class, severity level, and the responsible pathogen. A Grad-CAM heatmap shows its focus area.' },
-              { n:'03', icon:'💊',
+              { n:'03',
                 title: lang==='hi'?'सत्यापित दवा ऑर्डर करें':'Order the right treatment',
                 body: lang==='hi'?'बीमारी के अनुसार दवाएं, सत्यापित आपूर्तिकर्ताओं से।':'Disease-matched products from verified suppliers. Delivered to your farm.' },
             ].map(s => (
               <div key={s.n} className="card p-6">
-                <div className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold font-body mb-4"
+                <div className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold font-body mb-5"
                      style={{borderColor:'var(--green)',color:'var(--green)'}}>
                   {s.n}
                 </div>
-                <p className="text-3xl mb-3">{s.icon}</p>
                 <h3 className="font-display text-lg font-bold mb-2" style={{color:'var(--dark)'}}>{s.title}</h3>
                 <p className="font-body text-sm leading-relaxed" style={{color:'var(--muted)'}}>{s.body}</p>
               </div>
@@ -255,8 +245,6 @@ export default function HomePage({ onNavigate, lang }) {
 
       {/* ── CTA ───────────────────────────────────────────────────────── */}
       <section style={{background:'var(--green)'}} className="section-sm relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.05]"
-             style={{backgroundImage:`linear-gradient(#52B788 1px,transparent 1px),linear-gradient(90deg,#52B788 1px,transparent 1px)`,backgroundSize:'32px 32px'}}/>
         <div className="container relative text-center">
           <Leaf className="w-9 h-9 mx-auto mb-4" style={{color:'rgba(255,255,255,0.3)'}}/>
           <h2 className="font-display text-4xl md:text-5xl font-extrabold text-white mb-4">
@@ -284,8 +272,8 @@ export default function HomePage({ onNavigate, lang }) {
           </div>
           <span style={{color:'rgba(255,255,255,0.6)'}} className="font-display text-sm font-bold">Croply</span>
         </div>
-        <p style={{color:'rgba(255,255,255,0.2)'}} className="text-xs font-body">
-          Hackerz Street 4.0 · Manipal University Jaipur · Agriculture Track #2 · Prototype
+        <p style={{color:'rgba(255,255,255,0.2)'}} className="text-[11px] font-body opacity-60">
+          Hackerz Street 4.0 · Manipal University Jaipur · Agriculture Track #2
         </p>
       </footer>
     </div>

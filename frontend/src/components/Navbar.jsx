@@ -42,23 +42,23 @@ export default function Navbar({
         {/* Logo */}
         <button
           onClick={() => onNavigate("home")}
-          className="flex items-center gap-2.5 group flex-shrink-0"
+          className="flex items-center gap-3 group flex-shrink-0"
         >
           <div
-            style={{ background: "linear-gradient(135deg,#52B788,#2D6A4F)" }}
-            className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg"
+            style={{ background: "var(--green)" }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
           >
-            <Leaf className="w-4 h-4 text-white" strokeWidth={2.5} />
+            <Leaf className="w-5 h-5 text-white" strokeWidth={2.5} />
           </div>
-          <div>
-            <span className="font-display text-[17px] font-bold text-white tracking-tight leading-none block">
+          <div className="flex flex-col items-start justify-center">
+            <span className="font-display text-xl font-extrabold text-white tracking-tight leading-none block">
               Croply
             </span>
             <span
-              className="text-[10px] font-body leading-none block mt-0.5"
-              style={{ color: "rgba(82,183,136,0.6)" }}
+              className="text-[11px] font-body leading-none block mt-1"
+              style={{ color: "rgba(255,255,255,0.5)" }}
             >
-              Click. Detect. Act.
+              Agri Intelligence
             </span>
           </div>
         </button>

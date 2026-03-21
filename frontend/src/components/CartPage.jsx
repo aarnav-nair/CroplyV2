@@ -217,7 +217,7 @@ export default function CartPage({ cart, onUpdateCart, onNavigate, lang, onOrder
           <div className="flex items-center justify-center gap-2">
             <Lock className="w-3.5 h-3.5" style={{color:'var(--muted)'}}/>
             <p className="font-body text-xs text-center" style={{color:'var(--muted)'}}>
-              Prototype only — no real payment charged
+              Secure Sandbox Environment
             </p>
           </div>
         </div>

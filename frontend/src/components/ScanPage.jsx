@@ -11,10 +11,10 @@ const STEPS = [
 ]
 
 const PHOTO_TIPS = [
-  { icon:'☀️', title:'Good lighting',     body:'Natural daylight or shade. Avoid harsh shadows across the leaf.' },
-  { icon:'🍃', title:'Single leaf',        body:'Fill most of the frame with one affected leaf.' },
-  { icon:'🔍', title:'Show the damage',    body:'The diseased area should be clearly visible and in focus.' },
-  { icon:'📱', title:'Hold steady',        body:'Tap to focus before shooting. Blurry images reduce accuracy.' },
+  { title:'Good lighting', body:'Natural daylight or shade. Avoid harsh shadows across the leaf.' },
+  { title:'Single leaf', body:'Fill most of the frame with one affected leaf.' },
+  { title:'Show the damage', body:'The diseased area should be clearly visible and in focus.' },
+  { title:'Hold steady', body:'Tap to focus before shooting. Blurry images reduce accuracy.' },
 ]
 
 function StepBar({ step }) {
@@ -43,21 +43,13 @@ function StepBar({ step }) {
   )
 }
 
-const PROCESSING_MESSAGES = [
-  'Loading EfficientNet-B0 model…',
-  'Preprocessing image (224×224)…',
-  'Running forward pass…',
-  'Computing class probabilities…',
-  'Generating Grad-CAM heatmap…',
-  'Building recommendations…',
-]
+
 
 export default function ScanPage({ onResult, lang }) {
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
   const [step, setStep] = useState(1)
   const [error, setError] = useState(null)
-  const [progressMsg, setProgressMsg] = useState(0)
   const [progressPct, setProgressPct] = useState(0)
 
   const onDrop = useCallback((accepted, rejected) => {
@@ -83,12 +75,11 @@ export default function ScanPage({ onResult, lang }) {
     setStep(2)
     setError(null)
 
-    // Animate progress messages
+    // Simple progress bar
     let pct = 0
     const interval = setInterval(() => {
-      pct += 100 / PROCESSING_MESSAGES.length
+      pct += 15
       setProgressPct(Math.min(pct, 94))
-      setProgressMsg(m => Math.min(m+1, PROCESSING_MESSAGES.length-1))
     }, 380)
 
     try {
@@ -118,7 +109,7 @@ export default function ScanPage({ onResult, lang }) {
 
   function reset() {
     setFile(null); setPreview(null); setStep(1); setError(null)
-    setProgressMsg(0); setProgressPct(0)
+    setProgressPct(0)
   }
 
   return (
@@ -203,40 +194,25 @@ export default function ScanPage({ onResult, lang }) {
             </div>
           )}
 
-          {/* Photo tips */}
-          <div className="mt-6 card">
-            <div className="flex items-center gap-2 mb-4">
-              <Info className="w-4 h-4" style={{color:'var(--green-mid)'}}/>
-              <h3 className="font-display text-base font-bold" style={{color:'var(--dark)'}}>
-                {lang==='hi'?'बेहतर परिणाम के लिए सुझाव':'Tips for better accuracy'}
-              </h3>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+          {/* Photo tips & crops */}
+          <div className="mt-6 p-5 rounded-2xl" style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}>
+            <h3 className="font-display text-base font-bold mb-3" style={{color:'var(--dark)'}}>
+              {lang==='hi'?'बेहतर परिणाम के लिए सुझाव':'Tips for better accuracy'}
+            </h3>
+            <ul className="space-y-2 mb-6 ml-4 list-disc" style={{color:'var(--muted)'}}>
               {PHOTO_TIPS.map((t,i) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-xl" style={{background:'var(--bg)'}}>
-                  <span className="text-xl flex-shrink-0">{t.icon}</span>
-                  <div>
-                    <p className="font-body text-xs font-semibold mb-0.5" style={{color:'var(--dark)'}}>{t.title}</p>
-                    <p className="font-body text-xs leading-snug" style={{color:'var(--muted)'}}>{t.body}</p>
-                  </div>
-                </div>
+                <li key={i}>
+                  <strong style={{color:'var(--dark)'}} className="font-body text-sm">{t.title}:</strong> <span className="font-body text-sm">{t.body}</span>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
 
-          {/* Supported crops */}
-          <div className="mt-4 card">
-            <p className="text-xs font-body font-bold uppercase tracking-wider mb-3" style={{color:'var(--muted)'}}>
+            <h3 className="font-display text-base font-bold mb-2" style={{color:'var(--dark)'}}>
               {lang==='hi'?'समर्थित फसलें':'Supported crops'}
+            </h3>
+            <p className="font-body text-sm leading-relaxed" style={{color:'var(--muted)'}}>
+              Tomato, Potato, Rice, Wheat, Corn, Apple, Grape, Pepper, Peach, Strawberry, and more.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {['🍅 Tomato','🥔 Potato','🌾 Rice','🌾 Wheat','🌽 Corn','🍎 Apple','🍇 Grape','🌶 Pepper','🍑 Peach','🍓 Strawberry'].map(c => (
-                <span key={c} className="font-body text-xs px-3 py-1.5 rounded-full"
-                      style={{background:'var(--bg)',border:'1px solid var(--border)',color:'var(--ink-soft)'}}>
-                  {c}
-                </span>
-              ))}
-            </div>
           </div>
         </div>
       )}
@@ -244,27 +220,19 @@ export default function ScanPage({ onResult, lang }) {
       {/* Step 2: Processing */}
       {step===2 && (
         <div className="card p-8 text-center">
-          {/* Scan animation */}
-          <div className="relative w-48 h-48 mx-auto mb-8 rounded-2xl overflow-hidden scan-container"
-               style={{border:'2px solid var(--green-lt)'}}>
+          {/* Scan image */}
+          <div className="relative w-48 h-48 mx-auto mb-8 rounded-2xl overflow-hidden border border-[var(--border)]">
             {preview && <img src={preview} alt="" className="w-full h-full object-cover"/>}
-            <div className="scan-laser" style={{top:'0%'}}/>
-            <div className="absolute inset-0 rounded-2xl"
-                 style={{background:'linear-gradient(180deg,rgba(82,183,136,0.1) 0%,transparent 40%,transparent 60%,rgba(82,183,136,0.1) 100%)'}}/>
-            {/* Corner markers */}
-            {['top-2 left-2','top-2 right-2','bottom-2 left-2','bottom-2 right-2'].map((p,i) => (
-              <div key={i} className={`absolute ${p} w-5 h-5`}>
-                <div className="w-2.5 h-2.5 border-t-2 border-l-2 absolute top-0 left-0"
-                     style={{borderColor:'var(--green-lt)',transform:i%2===1?'scaleX(-1)':i>1?'scaleY(-1)':''}}/>
-              </div>
-            ))}
+            <div className="absolute inset-0 bg-black/15 flex items-center justify-center backdrop-blur-sm">
+              <Loader2 className="w-8 h-8 text-white animate-spin"/>
+            </div>
           </div>
 
           <h2 className="font-display text-2xl font-bold mb-2" style={{color:'var(--dark)'}}>
-            {lang==='hi'?'AI जांच कर रहा है…':'Analysing your crop…'}
+            {lang==='hi'?'AI जांच कर रहा है…':'Analysing crop health…'}
           </h2>
           <p className="font-body text-sm mb-6" style={{color:'var(--muted)'}}>
-            {PROCESSING_MESSAGES[progressMsg]}
+            {lang==='hi'?'खेत का डेटा प्रोसेस हो रहा है':'Processing leaf structure and symptoms...'}
           </p>
 
           {/* Progress bar */}
@@ -274,20 +242,6 @@ export default function ScanPage({ onResult, lang }) {
           <p className="font-body text-xs font-bold" style={{color:'var(--green-mid)'}}>
             {Math.round(progressPct)}%
           </p>
-
-          {/* Processing details */}
-          <div className="mt-8 grid grid-cols-3 gap-3 max-w-sm mx-auto">
-            {[
-              {label:'Model', value:'EfficientNet-B0'},
-              {label:'Classes', value:'38 diseases'},
-              {label:'Dataset', value:'PlantVillage'},
-            ].map(d => (
-              <div key={d.label} className="p-3 rounded-xl" style={{background:'var(--bg)'}}>
-                <p className="font-body text-[10px] font-bold uppercase tracking-wider mb-1" style={{color:'var(--muted)'}}>{d.label}</p>
-                <p className="font-body text-xs font-semibold" style={{color:'var(--dark)'}}>{d.value}</p>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>

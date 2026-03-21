@@ -7,7 +7,7 @@ const SEV = {
   severe:   { cls:'sev-severe',   icon:TrendingUp,    bar:'#EF4444' },
 }
 
-export default function HistoryPage({ onNavigate, lang, scanHistory = [] }) {
+export default function HistoryPage({ onNavigate, lang, scanHistory = [], orders = [], onClearHistory }) {
   const [localHistory] = useState(scanHistory)
 
   if (localHistory.length === 0) {
@@ -170,6 +170,60 @@ export default function HistoryPage({ onNavigate, lang, scanHistory = [] }) {
           )
         })}
       </div>
+
+      {/* Past Orders */}
+      {orders.length > 0 && (
+        <div className="mt-8">
+          <h2 className="font-display text-xl font-bold mb-4" style={{color:'var(--dark)'}}>
+            {lang==='hi'?'पिछले ऑर्डर':'Past Orders'}
+          </h2>
+          <div className="space-y-3">
+            {orders.map((order, i) => (
+              <div key={order.order_id || i} className="card p-4">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div>
+                    <p className="font-body text-xs font-bold px-2 py-0.5 rounded-md inline-block mb-1"
+                       style={{background:'var(--bg)',color:'var(--muted)'}}>
+                      #{order.order_id}
+                    </p>
+                    <p className="font-body text-xs" style={{color:'var(--muted)'}}>
+                      {order.placed_at ? new Date(order.placed_at).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) : 'Recent'}
+                    </p>
+                  </div>
+                  <span className="badge-green">{lang==='hi'?'✓ पुष्टि हुई':'✓ Confirmed'}</span>
+                </div>
+                <div className="space-y-1 mb-2">
+                  {order.items?.map((item, j) => (
+                    <div key={j} className="flex justify-between text-sm font-body">
+                      <span style={{color:'var(--dark)'}}>{item.name} × {item.quantity}</span>
+                      <span className="font-semibold" style={{color:'var(--green)'}}>₹{item.item_total || item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between font-bold font-body pt-2"
+                     style={{borderTop:'1px solid var(--border)'}}>
+                  <span style={{color:'var(--dark)'}}>Total</span>
+                  <span className="font-display text-lg" style={{color:'var(--green)'}}>₹{order.total_amount}</span>
+                </div>
+                <p className="font-body text-xs mt-2" style={{color:'var(--muted)'}}>
+                  🚚 {lang==='hi'?'अनुमानित डिलीवरी:':'Est. delivery:'} {order.estimated_delivery || '3-5 business days'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Clear history */}
+      {(scanHistory.length > 0 || orders.length > 0) && onClearHistory && (
+        <div className="mt-4 text-center">
+          <button onClick={onClearHistory}
+                  className="btn-outline btn-sm text-xs"
+                  style={{color:'var(--muted)',borderColor:'var(--border)'}}>
+            {lang==='hi'?'इतिहास साफ करें':'Clear scan history'}
+          </button>
+        </div>
+      )}
 
       <div className="mt-8 card p-6 text-center" style={{background:'var(--green)', border:'none'}}>
         <Leaf className="w-8 h-8 mx-auto mb-3" style={{color:'rgba(255,255,255,0.4)'}}/>

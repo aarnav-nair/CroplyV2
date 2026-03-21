@@ -47,7 +47,7 @@ function OrderConfirmation({ order, lang, onNavigate }) {
   )
 }
 
-export default function CartPage({ cart, onUpdateCart, onNavigate, lang }) {
+export default function CartPage({ cart, onUpdateCart, onNavigate, lang, onOrderPlaced }) {
   const [step, setStep]       = useState('cart')
   const [order, setOrder]     = useState(null)
   const [loading, setLoading] = useState(false)
@@ -72,9 +72,10 @@ export default function CartPage({ cart, onUpdateCart, onNavigate, lang }) {
     try {
       const items = cart.map(i => ({product_id:i.id,name:i.name,quantity:i.quantity,price:i.price_per_unit,item_total:i.price_per_unit*i.quantity}))
       const res = await placeOrder({items,farmer_name:form.name,phone:form.phone,address:form.address,pincode:form.pincode,total_amount:total})
-      setOrder({...res,items,total_amount:total})
+      const finalOrder = {...res,items,total_amount:total}
+      setOrder(finalOrder)
       setStep('confirmed')
-      onUpdateCart([])
+      if (onOrderPlaced) onOrderPlaced(finalOrder)
     } catch { toast.error('Order failed. Try again.') }
     finally { setLoading(false) }
   }

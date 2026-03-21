@@ -125,7 +125,7 @@ If no disease visible, use disease_name "Healthy Crop" with confidence below 60.
 Supported crops: Tomato, Potato, Corn, Rice, Wheat, Apple, Grape, Pepper, Peach, Strawberry.`
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

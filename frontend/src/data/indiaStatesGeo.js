@@ -1,0 +1,37 @@
+// Simplified India state GeoJSON polygons — embedded, no network needed
+// Coordinates are [lng, lat] per GeoJSON spec
+export const INDIA_STATES_GEO = {
+  type: "FeatureCollection",
+  features: [
+    { type:"Feature", properties:{name:"Jammu & Kashmir"}, geometry:{type:"Polygon", coordinates:[[[73.9,37.0],[80.3,37.0],[80.3,34.5],[77.8,34.0],[76.0,33.2],[74.0,33.1],[73.9,37.0]]]}},
+    { type:"Feature", properties:{name:"Himachal Pradesh"}, geometry:{type:"Polygon", coordinates:[[[76.0,33.2],[78.5,33.2],[79.2,30.4],[77.5,30.4],[76.0,31.5],[76.0,33.2]]]}},
+    { type:"Feature", properties:{name:"Punjab"}, geometry:{type:"Polygon", coordinates:[[[73.9,32.5],[76.0,32.5],[76.0,31.5],[77.5,30.4],[76.5,29.6],[74.5,30.0],[73.9,30.5],[73.9,32.5]]]}},
+    { type:"Feature", properties:{name:"Uttarakhand"}, geometry:{type:"Polygon", coordinates:[[[77.5,30.4],[79.2,30.4],[81.2,30.0],[80.5,29.0],[78.5,29.0],[77.6,29.6],[77.5,30.4]]]}},
+    { type:"Feature", properties:{name:"Haryana"}, geometry:{type:"Polygon", coordinates:[[[74.5,30.0],[76.5,29.6],[77.6,29.6],[77.5,28.5],[77.0,27.4],[75.5,27.5],[74.5,28.5],[74.5,30.0]]]}},
+    { type:"Feature", properties:{name:"Delhi"}, geometry:{type:"Polygon", coordinates:[[[76.8,28.9],[77.3,28.9],[77.3,28.4],[76.8,28.4],[76.8,28.9]]]}},
+    { type:"Feature", properties:{name:"Rajasthan"}, geometry:{type:"Polygon", coordinates:[[[69.5,30.0],[74.5,30.0],[74.5,28.5],[77.0,27.4],[76.0,24.5],[74.5,23.0],[72.0,23.5],[70.0,23.0],[69.5,25.0],[69.5,30.0]]]}},
+    { type:"Feature", properties:{name:"Uttar Pradesh"}, geometry:{type:"Polygon", coordinates:[[[77.0,30.4],[81.2,30.0],[84.7,27.5],[84.0,25.0],[82.0,24.0],[78.0,24.5],[76.0,24.5],[77.0,27.4],[77.5,28.5],[77.6,29.6],[77.0,30.4]]]}},
+    { type:"Feature", properties:{name:"Bihar"}, geometry:{type:"Polygon", coordinates:[[[83.3,27.5],[84.7,27.5],[88.3,27.5],[87.5,25.0],[86.5,24.7],[85.0,24.3],[83.3,24.7],[83.3,27.5]]]}},
+    { type:"Feature", properties:{name:"Jharkhand"}, geometry:{type:"Polygon", coordinates:[[[83.3,24.7],[85.0,24.3],[86.5,24.7],[87.5,25.0],[87.9,23.5],[87.0,22.0],[85.0,22.0],[83.3,22.5],[83.3,24.7]]]}},
+    { type:"Feature", properties:{name:"West Bengal"}, geometry:{type:"Polygon", coordinates:[[[83.3,27.5],[88.3,27.5],[89.9,26.5],[89.0,24.0],[88.5,21.5],[87.9,23.5],[87.5,25.0],[83.3,27.5]]]}},
+    { type:"Feature", properties:{name:"Sikkim"}, geometry:{type:"Polygon", coordinates:[[[88.0,28.1],[89.0,28.1],[89.0,27.1],[88.0,27.1],[88.0,28.1]]]}},
+    { type:"Feature", properties:{name:"Assam"}, geometry:{type:"Polygon", coordinates:[[[89.7,26.1],[92.0,27.5],[96.0,27.5],[96.0,26.5],[94.5,25.5],[92.0,24.5],[90.0,24.1],[89.7,26.1]]]}},
+    { type:"Feature", properties:{name:"Arunachal Pradesh"}, geometry:{type:"Polygon", coordinates:[[[91.6,27.5],[92.0,29.0],[97.4,29.5],[97.4,27.5],[94.5,26.7],[91.6,27.5]]]}},
+    { type:"Feature", properties:{name:"Nagaland"}, geometry:{type:"Polygon", coordinates:[[[93.3,27.1],[95.3,27.1],[95.3,25.7],[93.5,25.7],[93.3,27.1]]]}},
+    { type:"Feature", properties:{name:"Manipur"}, geometry:{type:"Polygon", coordinates:[[[93.5,25.7],[95.2,25.7],[95.0,23.8],[93.0,23.8],[93.5,25.7]]]}},
+    { type:"Feature", properties:{name:"Mizoram"}, geometry:{type:"Polygon", coordinates:[[[92.3,24.5],[93.5,24.5],[93.0,22.0],[92.3,21.9],[92.3,24.5]]]}},
+    { type:"Feature", properties:{name:"Tripura"}, geometry:{type:"Polygon", coordinates:[[[91.2,24.5],[92.3,24.5],[92.3,22.9],[91.2,22.9],[91.2,24.5]]]}},
+    { type:"Feature", properties:{name:"Meghalaya"}, geometry:{type:"Polygon", coordinates:[[[89.8,26.1],[92.8,26.1],[92.8,25.0],[89.8,25.0],[89.8,26.1]]]}},
+    { type:"Feature", properties:{name:"Madhya Pradesh"}, geometry:{type:"Polygon", coordinates:[[[74.0,26.9],[82.8,26.9],[82.8,22.7],[81.5,22.0],[78.5,21.5],[76.0,21.5],[74.5,23.0],[74.0,24.5],[74.0,26.9]]]}},
+    { type:"Feature", properties:{name:"Chhattisgarh"}, geometry:{type:"Polygon", coordinates:[[[80.5,24.1],[84.1,24.1],[84.1,22.0],[83.0,18.5],[81.0,17.8],[80.2,19.0],[80.5,22.0],[80.5,24.1]]]}},
+    { type:"Feature", properties:{name:"Odisha"}, geometry:{type:"Polygon", coordinates:[[[81.4,22.5],[84.4,24.1],[87.5,22.0],[87.5,19.0],[85.0,18.0],[82.0,18.5],[81.4,19.5],[81.4,22.5]]]}},
+    { type:"Feature", properties:{name:"Gujarat"}, geometry:{type:"Polygon", coordinates:[[[68.0,24.7],[74.5,24.7],[74.5,23.0],[73.0,21.5],[72.0,20.5],[70.0,20.7],[69.0,22.0],[68.0,24.7]]]}},
+    { type:"Feature", properties:{name:"Maharashtra"}, geometry:{type:"Polygon", coordinates:[[[72.6,22.1],[80.5,22.1],[80.5,18.5],[79.0,17.0],[76.0,16.0],[73.5,16.0],[72.6,19.0],[72.6,22.1]]]}},
+    { type:"Feature", properties:{name:"Goa"}, geometry:{type:"Polygon", coordinates:[[[73.7,15.8],[74.3,15.8],[74.3,14.9],[73.7,14.9],[73.7,15.8]]]}},
+    { type:"Feature", properties:{name:"Telangana"}, geometry:{type:"Polygon", coordinates:[[[77.2,19.9],[81.3,19.9],[81.3,17.5],[80.0,16.5],[78.5,15.8],[77.2,16.5],[77.2,19.9]]]}},
+    { type:"Feature", properties:{name:"Andhra Pradesh"}, geometry:{type:"Polygon", coordinates:[[[80.0,19.9],[84.8,19.9],[84.8,16.5],[82.0,14.0],[80.0,13.5],[77.5,14.0],[78.5,15.8],[80.0,16.5],[80.0,19.9]]]}},
+    { type:"Feature", properties:{name:"Karnataka"}, geometry:{type:"Polygon", coordinates:[[[74.0,18.0],[78.5,18.0],[77.5,16.0],[78.5,15.8],[78.0,14.0],[76.5,11.6],[75.0,12.0],[74.5,14.0],[74.0,16.0],[74.0,18.0]]]}},
+    { type:"Feature", properties:{name:"Tamil Nadu"}, geometry:{type:"Polygon", coordinates:[[[77.0,13.0],[80.0,13.5],[80.4,12.0],[80.2,10.0],[79.5,8.1],[77.0,8.4],[76.9,10.0],[77.0,11.5],[77.0,13.0]]]}},
+    { type:"Feature", properties:{name:"Kerala"}, geometry:{type:"Polygon", coordinates:[[[74.9,12.8],[77.0,12.8],[77.0,8.4],[76.0,8.5],[74.9,10.5],[74.9,12.8]]]}},
+  ]
+}

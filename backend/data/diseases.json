@@ -1,0 +1,116 @@
+[
+  {
+    "id": "tomato_late_blight",
+    "name": "Tomato Late Blight",
+    "name_hi": "टमाटर लेट ब्लाइट",
+    "crop": "Tomato",
+    "crop_hi": "टमाटर",
+    "pathogen": "Phytophthora infestans (fungus-like)",
+    "description": "Late Blight is one of the most destructive tomato diseases. It appears as dark, water-soaked lesions on leaves that quickly turn brown and papery. Under humid conditions, a white mold may appear on the underside of leaves.",
+    "description_hi": "लेट ब्लाइट टमाटर की सबसे विनाशकारी बीमारियों में से एक है। पत्तियों पर गहरे, पानी जैसे धब्बे दिखाई देते हैं।",
+    "causes": "Caused by the water mould Phytophthora infestans. Spreads rapidly in cool, wet weather (10-25°C with high humidity).",
+    "spread_rate": "Very Fast",
+    "affected_parts": ["Leaves", "Stems", "Fruits"],
+    "severity_indicators": {
+      "mild": "Small water-soaked spots on a few leaves",
+      "moderate": "Multiple lesions, some yellowing, spreading to stems",
+      "severe": "Widespread necrosis, fruit infection, plant death possible"
+    },
+    "product_ids": ["mancozeb_75", "copper_oxy", "metalaxyl_mz", "neem_oil_org"]
+  },
+  {
+    "id": "tomato_early_blight",
+    "name": "Tomato Early Blight",
+    "name_hi": "टमाटर अर्ली ब्लाइट",
+    "crop": "Tomato",
+    "crop_hi": "टमाटर",
+    "pathogen": "Alternaria solani (fungus)",
+    "description": "Early Blight causes dark brown spots with concentric rings (target-board pattern) on older, lower leaves. Severely affected leaves turn yellow and drop off.",
+    "description_hi": "अर्ली ब्लाइट में पत्तियों पर गहरे भूरे रंग के गोल छल्लेदार धब्बे बनते हैं।",
+    "causes": "Fungal infection favored by warm temperatures (24-29°C) and frequent rain or heavy dew.",
+    "spread_rate": "Moderate",
+    "affected_parts": ["Leaves", "Stem collar", "Fruits"],
+    "severity_indicators": {
+      "mild": "A few target-spot lesions on lower leaves only",
+      "moderate": "Lesions on multiple leaf tiers, some defoliation",
+      "severe": "Heavy defoliation, fruit lesions present"
+    },
+    "product_ids": ["chlorothalonil", "mancozeb_75", "neem_oil_org", "propiconazole"]
+  },
+  {
+    "id": "potato_late_blight",
+    "name": "Potato Late Blight",
+    "name_hi": "आलू लेट ब्लाइट",
+    "crop": "Potato",
+    "crop_hi": "आलू",
+    "pathogen": "Phytophthora infestans (fungus-like)",
+    "description": "Same pathogen as Tomato Late Blight. Causes dark blotches on leaves and cankers on stems. Infected tubers show reddish-brown rot beneath the skin.",
+    "description_hi": "आलू की पत्तियों और कंदों पर भूरे-काले धब्बे और सड़न उत्पन्न करता है।",
+    "causes": "Cool, moist weather accelerates spread. The spores can travel miles in wind.",
+    "spread_rate": "Very Fast",
+    "affected_parts": ["Leaves", "Stems", "Tubers"],
+    "severity_indicators": {
+      "mild": "Small lesions on foliage tips",
+      "moderate": "Spreading lesions, possible stem cankers",
+      "severe": "Tuber infection, complete foliage collapse"
+    },
+    "product_ids": ["metalaxyl_mz", "copper_oxy", "mancozeb_75", "neem_oil_org"]
+  },
+  {
+    "id": "corn_common_rust",
+    "name": "Corn Common Rust",
+    "name_hi": "मक्का साधारण रस्ट",
+    "crop": "Corn",
+    "crop_hi": "मक्का",
+    "pathogen": "Puccinia sorghi (fungus)",
+    "description": "Common rust produces small, circular to elongated, cinnamon-brown pustules on both leaf surfaces. Heavy infections can cause significant yield loss.",
+    "description_hi": "मक्के की पत्तियों पर दालचीनी रंग के छोटे-छोटे फफोले बनते हैं।",
+    "causes": "Fungal spores spread by wind. Favored by moderate temperatures (16-23°C) and high humidity.",
+    "spread_rate": "Fast",
+    "affected_parts": ["Leaves", "Husks"],
+    "severity_indicators": {
+      "mild": "Scattered pustules on lower leaves",
+      "moderate": "Pustules on multiple leaves, some coalescing",
+      "severe": "Entire plant covered, leaves dying"
+    },
+    "product_ids": ["propiconazole", "trifloxystrobin", "mancozeb_75", "neem_oil_org"]
+  },
+  {
+    "id": "rice_blast",
+    "name": "Rice Blast",
+    "name_hi": "धान ब्लास्ट",
+    "crop": "Rice",
+    "crop_hi": "धान",
+    "pathogen": "Magnaporthe oryzae (fungus)",
+    "description": "Rice Blast is the most economically important rice disease worldwide. It causes diamond-shaped lesions with grey centres and dark borders on leaves, and can destroy the neck of the panicle causing 'neck rot'.",
+    "description_hi": "धान की पत्तियों और बालियों पर हीरे के आकार के धब्बे बनते हैं, जिससे फसल का भारी नुकसान होता है।",
+    "causes": "Favored by high humidity, high nitrogen, and temperatures of 24-28°C. Spreads via airborne spores.",
+    "spread_rate": "Very Fast",
+    "affected_parts": ["Leaves", "Nodes", "Panicle neck"],
+    "severity_indicators": {
+      "mild": "Small leaf spots, no neck infection",
+      "moderate": "Spreading leaf blast, some nodes infected",
+      "severe": "Neck rot, panicle death, whitehead visible"
+    },
+    "product_ids": ["tricyclazole", "propiconazole", "neem_oil_org", "copper_oxy"]
+  },
+  {
+    "id": "wheat_leaf_rust",
+    "name": "Wheat Leaf Rust",
+    "name_hi": "गेहूं पत्ती रस्ट",
+    "crop": "Wheat",
+    "crop_hi": "गेहूं",
+    "pathogen": "Puccinia triticina (fungus)",
+    "description": "Leaf rust causes small, round to oval, orange-red powdery pustules on the upper surface of leaves. It is the most widespread wheat rust disease globally.",
+    "description_hi": "गेहूं की पत्तियों पर नारंगी-लाल रंग के छोटे पाउडर जैसे फफोले बनते हैं।",
+    "causes": "Wind-dispersed spores. Favored by temperatures of 15-22°C and leaf wetness.",
+    "spread_rate": "Fast",
+    "affected_parts": ["Leaves", "Leaf sheaths"],
+    "severity_indicators": {
+      "mild": "Few pustules on lower leaves only",
+      "moderate": "Pustules on flag leaf, some coalescing",
+      "severe": "Heavy infection on all leaves, early senescence"
+    },
+    "product_ids": ["propiconazole", "trifloxystrobin", "mancozeb_75", "neem_oil_org"]
+  }
+]

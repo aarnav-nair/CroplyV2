@@ -15,14 +15,28 @@ import random
 import time
 import uuid
 from datetime import datetime
+from dotenv import load_dotenv
+import google.generativeai as genai
+
+# Load environment variables
+env_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path=env_path)
+
+# Configure Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+print("-" * 50)
+print(f"BACKEND STARTUP: GEMINI_API_KEY loaded: {'YES' if GEMINI_API_KEY else 'NO'}")
+print("-" * 50)
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 # ── Load mock data ──────────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(__file__)
 
-with open(os.path.join(BASE_DIR, "data", "diseases.json")) as f:
+with open(os.path.join(BASE_DIR, "data", "diseases.json"), encoding='utf-8') as f:
     DISEASES: list = json.load(f)
 
-with open(os.path.join(BASE_DIR, "data", "products.json")) as f:
+with open(os.path.join(BASE_DIR, "data", "products.json"), encoding='utf-8') as f:
     PRODUCTS: list = json.load(f)
 
 DISEASE_MAP = {d["id"]: d for d in DISEASES}
@@ -86,12 +100,80 @@ class ChatMessage(BaseModel):
     language: str = "en"     # en | hi
 
 # ── Mock ML inference ────────────────────────────────────────────────────────
+async def run_gemini_inference(image_bytes: bytes, mime_type: str = "image/jpeg") -> dict:
+    """
+    Calls Gemini 1.5 Flash Vision to identify crop diseases.
+    """
+    if not GEMINI_API_KEY:
+        # Fallback to mock if no key
+        return mock_run_inference(image_bytes)
+
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        prompt = """You are an expert agronomist AI. Analyse this crop leaf image and identify any disease.
+Respond ONLY with valid JSON in exactly this format:
+{
+  "disease_name": "e.g. Tomato Late Blight",
+  "crop": "e.g. Tomato",
+  "confidence": 87.5,
+  "severity": "mild",
+  "description": "2 sentence description",
+  "causes": "one sentence on cause",
+  "spread_rate": "Fast",
+  "affected_parts": ["Leaves"]
+}
+If no disease, use "Healthy Crop". Supported crops: Tomato, Potato, Corn, Rice, Wheat, etc."""
+
+        # Convert image bytes to Gemini format
+        image_parts = [{"mime_type": "image/jpeg", "data": image_bytes}]
+        
+        response = model.generate_content([prompt, image_parts[0]])
+        text = response.text
+        print(f"Gemini API Response: {text}")
+        
+        # Extract JSON
+        import re
+        json_match = re.search(r'\{.*\}', text, re.DOTALL)
+        if json_match:
+            result = json.loads(json_match.group())
+            print(f"Gemini Parsed Result: {result}")
+            
+            # Map to existing disease IDs if possible
+            disease_name = result.get("disease_name", "unknown")
+            disease_id = disease_name.lower().replace(" ", "_")
+            
+            # Try to find a close match in our DISEASES list
+            best_match_id = "unknown"
+            for d in DISEASES:
+                if d["name"].lower() in disease_name.lower() or disease_name.lower() in d["name"].lower():
+                    best_match_id = d["id"]
+                    print(f"Gemini matched to local ID: {best_match_id}")
+                    break
+            
+            return {
+                "disease_id": best_match_id if best_match_id != "unknown" else disease_id,
+                "disease_name": disease_name,
+                "crop": result.get("crop", "Unknown"),
+                "confidence": result.get("confidence", 90.0),
+                "severity": result.get("severity", "moderate"),
+                "description": result.get("description", ""),
+                "causes": result.get("causes", ""),
+                "spread_rate": result.get("spread_rate", "Moderate"),
+                "affected_parts": result.get("affected_parts", ["Leaves"])
+            }
+        else:
+            print("Gemini Error: No JSON found in response")
+            return mock_run_inference(image_bytes)
+    except Exception as e:
+        print(f"Gemini Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return mock_run_inference(image_bytes)
+
 def mock_run_inference(image_bytes: bytes) -> dict:
     """
     Simulates EfficientNet-B0 inference on the PlantVillage dataset.
-    In production, replace with actual PyTorch model inference.
-
-    Returns a dict with disease_id, confidence, severity.
     """
     # Deterministic seed from image size for demo consistency
     random.seed(len(image_bytes) % 1000)
@@ -105,8 +187,14 @@ def mock_run_inference(image_bytes: bytes) -> dict:
 
     return {
         "disease_id": disease["id"],
+        "disease_name": disease["name"],
+        "crop": disease["crop"],
         "confidence": confidence,
         "severity": severity,
+        "description": disease["description"],
+        "causes": disease["causes"],
+        "spread_rate": disease["spread_rate"],
+        "affected_parts": disease["affected_parts"],
     }
 
 def mock_gradcam(image_bytes: bytes) -> str:
@@ -185,26 +273,33 @@ async def detect_disease(file: UploadFile = File(...)):
     if len(image_bytes) > 10 * 1024 * 1024:  # 10MB limit
         raise HTTPException(status_code=400, detail="Image too large. Maximum size is 10MB.")
 
-    # Run mock inference
-    inference = mock_run_inference(image_bytes)
-    disease = DISEASE_MAP[inference["disease_id"]]
-    gradcam = mock_gradcam(image_bytes)
+    # Run Gemini inference
+    inference = await run_gemini_inference(image_bytes, file.content_type)
+    
+    # Get localized names if we matched a known disease
+    known_disease = DISEASE_MAP.get(inference["disease_id"])
+    
+    disease_name_hi = known_disease["name_hi"] if known_disease else ""
+    crop_hi = known_disease["crop_hi"] if known_disease else ""
+    description_hi = known_disease["description_hi"] if known_disease else ""
 
+    gradcam = mock_gradcam(image_bytes)
     scan_id = str(uuid.uuid4())[:8].upper()
+    
     result = {
         "scan_id": scan_id,
-        "disease_id": disease["id"],
-        "disease_name": disease["name"],
-        "disease_name_hi": disease["name_hi"],
-        "crop": disease["crop"],
-        "crop_hi": disease["crop_hi"],
+        "disease_id": inference["disease_id"],
+        "disease_name": inference["disease_name"],
+        "disease_name_hi": disease_name_hi,
+        "crop": inference["crop"],
+        "crop_hi": crop_hi,
         "confidence": inference["confidence"],
         "severity": inference["severity"],
-        "description": disease["description"],
-        "description_hi": disease["description_hi"],
-        "causes": disease["causes"],
-        "spread_rate": disease["spread_rate"],
-        "affected_parts": disease["affected_parts"],
+        "description": inference["description"],
+        "description_hi": description_hi,
+        "causes": inference["causes"],
+        "spread_rate": inference["spread_rate"],
+        "affected_parts": inference["affected_parts"],
         "gradcam_base64": gradcam,
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -313,3 +408,8 @@ def disease_alert_map():
          "disease": "Tomato Early Blight", "count": 36, "severity": "moderate"},
     ]
     return {"alerts": mock_alerts, "total_scans": 484, "active_regions": 10}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8080)

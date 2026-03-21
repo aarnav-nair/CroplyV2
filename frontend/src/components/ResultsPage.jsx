@@ -1,12 +1,142 @@
 import { useState, useEffect } from 'react'
 import { getRecommendations } from '../services/api.js'
 import KisanBot from './KisanBot.jsx'
+import DiseaseProgressionTracker from './DiseaseProgressionTracker.jsx'
 import {
   ArrowLeft, ShoppingCart, Info, MessageCircle,
   ChevronDown, ChevronUp, Star, Shield, Leaf,
   Zap, Wind, Layers, AlertTriangle, CheckCircle2,
-  Clock, Package, Share2
+  Package, Share2, Calculator
 } from 'lucide-react'
+
+// ── Dosage Calculator helpers ─────────────────────────────────────────────────
+// Parses "5ml per litre" / "2.5g per litre" from product.dosage string
+function parseDosage(dosageStr) {
+  if (!dosageStr) return null
+  const m = dosageStr.match(/([\d.]+)\s*(ml|g|kg|litre|l)\s*per\s*(litre|liter|l\b)/i)
+  if (!m) return null
+  return { amount: parseFloat(m[1]), unit: m[2].toLowerCase() }
+}
+
+// Parses package size from product.unit string e.g. "1 litre bottle" → 1000 (in ml)
+// or "500g pack" → 500 (in g)
+function parsePackageSize(unitStr) {
+  if (!unitStr) return null
+  const m = unitStr.match(/([\d.]+)\s*(ml|g|kg|litre|liter|l)\b/i)
+  if (!m) return null
+  let val = parseFloat(m[1])
+  const u = m[2].toLowerCase()
+  if (u === 'litre' || u === 'liter' || u === 'l') val = val * 1000 // to ml
+  if (u === 'kg') val = val * 1000 // to g
+  return val
+}
+
+// 1 acre ≈ 200 litres of spray solution (standard for field crops in India)
+const LITRES_PER_ACRE = 200
+
+function calcDosage(product, acres) {
+  const parsed = parseDosage(product.dosage)
+  const pkgSize = parsePackageSize(product.unit)
+  if (!parsed || !pkgSize || acres <= 0) return null
+
+  const totalWater = acres * LITRES_PER_ACRE            // litres of water
+  const productNeeded = totalWater * parsed.amount       // ml or g needed
+  const packs = Math.ceil(productNeeded / pkgSize)
+  const totalCost = packs * product.price_per_unit
+
+  // Display amount
+  let displayQty, displayUnit
+  if (parsed.unit === 'ml' || parsed.unit === 'l') {
+    if (productNeeded >= 1000) {
+      displayQty = (productNeeded / 1000).toFixed(2).replace(/\.?0+$/, '')
+      displayUnit = 'litres'
+    } else {
+      displayQty = productNeeded.toFixed(0)
+      displayUnit = 'ml'
+    }
+  } else {
+    if (productNeeded >= 1000) {
+      displayQty = (productNeeded / 1000).toFixed(2).replace(/\.?0+$/, '')
+      displayUnit = 'kg'
+    } else {
+      displayQty = productNeeded.toFixed(0)
+      displayUnit = 'g'
+    }
+  }
+
+  return { displayQty, displayUnit, packs, totalCost }
+}
+
+function DosageCalculator({ product, lang }) {
+  const hi = lang === 'hi'
+  const [acres, setAcres] = useState('')
+  const result = acres ? calcDosage(product, parseFloat(acres)) : null
+  const canCalc = !!parseDosage(product.dosage)
+
+  if (!canCalc) return (
+    <div className="p-2.5 rounded-lg mb-3" style={{background:'var(--bg)'}}>
+      <p className="font-body text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{color:'var(--muted)'}}>
+        {hi ? 'खुराक' : 'Dosage'}
+      </p>
+      <p className="font-body text-xs font-medium" style={{color:'var(--dark)'}}>{product.dosage}</p>
+    </div>
+  )
+
+  return (
+    <div className="rounded-2xl mb-4 overflow-hidden"
+         style={{border:'2px solid var(--green-lt)'}}>
+      {/* Header row */}
+      <div className="flex items-center gap-3 px-4 py-3"
+           style={{background:'var(--green)'}}>
+        <Calculator className="w-5 h-5 text-white flex-shrink-0"/>
+        <span className="font-body text-sm font-bold text-white">
+          {hi ? 'खुराक कैलकुलेटर' : 'Dosage Calculator'}
+        </span>
+      </div>
+
+      <div className="p-4" style={{background:'var(--bg)'}}>
+        {/* Dosage reference */}
+        <p className="font-body text-sm mb-3" style={{color:'var(--muted)'}}>
+          {hi ? 'दर: ' : 'Rate: '}<strong style={{color:'var(--dark)'}}>{product.dosage}</strong>
+        </p>
+
+        {/* Acres input */}
+        <div className="flex items-center gap-3 mb-3">
+          <input
+            type="number"
+            min="0.1" step="0.1"
+            value={acres}
+            onChange={e => setAcres(e.target.value)}
+            placeholder={hi ? 'एकड़ दर्ज करें' : 'Enter field size'}
+            className="input text-base flex-1 font-semibold"
+            style={{height:'44px', padding:'8px 14px', fontSize:'16px'}}
+          />
+          <span className="font-body text-sm font-bold flex-shrink-0"
+                style={{color:'var(--dark)'}}>
+            {hi ? 'एकड़' : 'acres'}
+          </span>
+        </div>
+
+        {/* Result */}
+        {result && (
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: hi ? 'उत्पाद चाहिए' : 'Product needed', val: `${result.displayQty} ${result.displayUnit}`, color: 'var(--green)' },
+              { label: hi ? 'पैक / बोतल' : 'Packs / bottles', val: result.packs, color: 'var(--dark)' },
+              { label: hi ? 'कुल लागत' : 'Total cost', val: `₹${result.totalCost}`, color: '#0369a1' },
+            ].map(d => (
+              <div key={d.label} className="p-3 rounded-xl text-center"
+                   style={{background:'var(--surface)', border:'1.5px solid var(--border)'}}>
+                <p className="font-display text-xl font-extrabold leading-none mb-1" style={{color: d.color}}>{d.val}</p>
+                <p className="font-body text-xs leading-tight" style={{color:'var(--muted)'}}>{d.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 const SEV = {
   mild:     { label:'Mild',     label_hi:'हल्का',  cls:'sev-mild',     icon:CheckCircle2,  desc:'Early stage — act quickly to prevent spread.' },
@@ -85,16 +215,15 @@ function ProductCard({ product, onAddToCart, lang }) {
         </p>
       </div>
 
-      {/* Dosage + PHI quick */}
-      <div className="flex gap-2 mb-3">
-        <div className="flex-1 p-2.5 rounded-lg" style={{background:'var(--bg)'}}>
-          <p className="font-body text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{color:'var(--muted)'}}>Dosage</p>
-          <p className="font-body text-xs font-medium" style={{color:'var(--dark)'}}>{product.dosage}</p>
-        </div>
-        <div className="flex-1 p-2.5 rounded-lg" style={{background:'var(--bg)'}}>
-          <p className="font-body text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{color:'var(--muted)'}}>Pre-harvest</p>
-          <p className="font-body text-xs font-medium" style={{color:'var(--dark)'}}>{product.pre_harvest_interval}</p>
-        </div>
+      {/* Dosage Calculator */}
+      <DosageCalculator product={product} lang={lang} />
+
+      {/* Pre-harvest interval */}
+      <div className="p-2.5 rounded-lg mb-3" style={{background:'var(--bg)'}}>
+        <p className="font-body text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{color:'var(--muted)'}}>
+          {lang==='hi' ? 'पूर्व-कटाई अंतराल' : 'Pre-harvest interval'}
+        </p>
+        <p className="font-body text-xs font-medium" style={{color:'var(--dark)'}}>{product.pre_harvest_interval}</p>
       </div>
 
       {/* Expand */}
@@ -216,6 +345,9 @@ export default function ResultsPage({ result, imagePreview, onAddToCart, onNavig
               </div>
             </div>
           </div>
+
+          {/* Disease Progression Tracker */}
+          <DiseaseProgressionTracker result={result} lang={lang} />
 
           {/* Disease info */}
           <div className="card space-y-4">

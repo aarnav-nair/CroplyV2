@@ -97,10 +97,22 @@ export default function ScanPage({ onResult, lang }) {
       setProgressPct(100)
       await new Promise(r => setTimeout(r, 400))
       onResult(result, preview)
-    } catch {
+    } catch (e) {
       clearInterval(interval)
       setStep(1)
-      setError('Detection failed. Please try again with a clearer photo.')
+      // Show the real error so it's diagnosable
+      const msg = e?.message || ''
+      if (msg.includes('VITE_GEMINI_API_KEY') || (!import.meta.env.VITE_GEMINI_API_KEY)) {
+        setError('Gemini API key is missing. Add VITE_GEMINI_API_KEY to your frontend/.env.local file and restart the dev server.')
+      } else if (msg.includes('API_KEY_INVALID') || msg.includes('400')) {
+        setError('Gemini API key is invalid. Check the key at aistudio.google.com/apikey and update your .env.local file.')
+      } else if (msg.includes('quota') || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
+        setError('Gemini error: ' + msg)
+      } else if (msg) {
+        setError('Scan failed: ' + msg)
+      } else {
+        setError('Detection failed. Please try again with a clearer photo.')
+      }
     }
   }
 

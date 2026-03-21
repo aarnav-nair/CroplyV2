@@ -226,12 +226,12 @@ export default function NavBot({ onNavigate, lang }) {
     try {
       const reply = await askNavBot(msg, lang);
       addMsg("bot", reply);
-    } catch {
+    } catch (e) {
       addMsg(
         "bot",
-        lang === "hi"
-          ? "माफ करें, अभी जवाब नहीं दे पा रहा। थोड़ी देर बाद कोशिश करें।"
-          : "Sorry, I couldn't get an answer right now. Please try again shortly.",
+        "⚠️ " + (e.message || (lang === "hi"
+          ? "जवाब नहीं मिल सका। API key जांचें।"
+          : "Could not get a response. Check your VITE_GROQ_API_KEY.")),
       );
     } finally {
       setLoading(false);

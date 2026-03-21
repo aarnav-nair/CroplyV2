@@ -38,8 +38,12 @@ export default function KisanBot({ result, lang }) {
     setMsgs(p => [...p, {role:'user', text:msg}])
     setLoading(true)
     const ctx = { disease:result?.disease_name, crop:result?.crop, severity:result?.severity }
-    const reply = await askKisanBot(msg, ctx, lang)
-    setMsgs(p => [...p, {role:'bot', text:reply}])
+    try {
+      const reply = await askKisanBot(msg, ctx, lang)
+      setMsgs(p => [...p, {role:'bot', text:reply}])
+    } catch (e) {
+      setMsgs(p => [...p, {role:'bot', text:'⚠️ ' + (e.message || 'Could not connect. Check your API key.')}])
+    }
     setLoading(false)
   }
 

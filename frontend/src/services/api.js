@@ -63,7 +63,24 @@ export async function authLogout() {
 
 // ── Disease Detection ─────────────────────────────────────────────────────────
 export async function detectDisease(imageFile) {
-  // Try real backend first
+  const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY
+
+  // 1. If Gemini key is present, try real AI analysis first
+  if (GEMINI_KEY) {
+    try {
+      return await detectWithGeminiVision(imageFile, GEMINI_KEY)
+    } catch (e) {
+      const msg = e.message || ''
+      // Hard failures: bad key or leaked key — surface immediately, don't fall back
+      if (msg.includes('API_KEY_INVALID') || msg.includes('leaked') || msg.includes('not found')) {
+        throw e
+      }
+      // Quota / billing issues — fall through to backend mock silently
+      console.warn('Gemini unavailable, falling back to mock:', msg)
+    }
+  }
+
+  // 2. Try the backend (which uses mock inference)
   try {
     const formData = new FormData()
     formData.append('file', imageFile)
@@ -74,25 +91,16 @@ export async function detectDisease(imageFile) {
     return data
   } catch {}
 
-  // Use Gemini Vision for real image analysis
-  const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY
-  if (GEMINI_KEY) {
-    try {
-      return await detectWithGeminiVision(imageFile, GEMINI_KEY)
-    } catch (e) {
-      console.warn('Gemini vision failed:', e)
-    }
-  }
-
-  // Last resort: mock
+  // 3. Last resort: hardcoded mock (offline demo)
   await delay(2200)
   return { ...MOCK_DETECTION, scan_id: randomScanId() }
 }
 
 // ── Gemini Vision: Crop Disease Detection ─────────────────────────────────────
 async function detectWithGeminiVision(imageFile, apiKey) {
-  const base64 = await fileToBase64(imageFile)
-  const mimeType = imageFile.type || 'image/jpeg'
+  // Resize to max 1024px before encoding — large images hit Gemini's free-tier token limit
+  const base64 = await fileToBase64Resized(imageFile, 1024)
+  const mimeType = 'image/jpeg' // always send as JPEG after resize
 
   const prompt = `You are an expert agronomist AI. Analyse this crop leaf image and identify any disease.
 
@@ -117,7 +125,7 @@ If no disease visible, use disease_name "Healthy Crop" with confidence below 60.
 Supported crops: Tomato, Potato, Corn, Rice, Wheat, Apple, Grape, Pepper, Peach, Strawberry.`
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -137,7 +145,10 @@ Supported crops: Tomato, Potato, Corn, Rice, Wheat, Apple, Grape, Pepper, Peach,
   )
 
   const data = await res.json()
-  if (data.error) throw new Error(data.error.message)
+  if (!res.ok || data.error) {
+    const detail = data.error?.message || data.error?.status || res.statusText
+    throw new Error(detail || `Gemini HTTP ${res.status}`)
+  }
 
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
   const jsonMatch = text.match(/\{[\s\S]*\}/)
@@ -255,7 +266,7 @@ export async function askKisanBot(message, context, language = 'en') {
   // Log user prompt (fire-and-forget)
   logChat('user', message, { botType: 'kisanbot', language, ...context })
 
-  const reply = await callGroq({ model: 'llama3-8b-8192', maxTokens: 200, system: systemPrompt, user: message, language })
+  const reply = await callGroq({ model: 'llama-3.1-8b-instant', maxTokens: 200, system: systemPrompt, user: message, language })
 
   // Log bot reply
   logChat('bot', reply, { botType: 'kisanbot', language, ...context })
@@ -281,7 +292,7 @@ export async function askNavBot(message, language = 'en') {
   // Log user prompt
   logChat('user', message, { botType: 'navbot', language })
 
-  const reply = await callGroq({ model: 'llama3-8b-8192', maxTokens: 150, system: systemPrompt, user: message, language })
+  const reply = await callGroq({ model: 'llama-3.1-8b-instant', maxTokens: 150, system: systemPrompt, user: message, language })
 
   // Log bot reply
   logChat('bot', reply, { botType: 'navbot', language })
@@ -292,31 +303,31 @@ export async function askNavBot(message, language = 'en') {
 // ── Shared Groq caller ────────────────────────────────────────────────────────
 async function callGroq({ model, maxTokens, system, user, language }) {
   const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY
-  if (!GROQ_KEY) return getFallbackResponse(language)
-
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + GROQ_KEY,
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user },
-        ],
-      }),
-    })
-    const data = await res.json()
-    if (data.error) throw new Error(data.error.message)
-    return data.choices?.[0]?.message?.content || getFallbackResponse(language)
-  } catch (e) {
-    console.warn('Groq error:', e)
-    return getFallbackResponse(language)
+  if (!GROQ_KEY) {
+    throw new Error('VITE_GROQ_API_KEY is not set in your .env.local file.')
   }
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + GROQ_KEY,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    }),
+  })
+
+  const data = await res.json()
+  if (data.error) throw new Error('Groq: ' + data.error.message)
+  const text = data.choices?.[0]?.message?.content
+  if (!text) throw new Error('Groq returned an empty response.')
+  return text
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -328,6 +339,33 @@ function fileToBase64(file) {
     const reader = new FileReader()
     reader.onload = () => res(reader.result.split(',')[1])
     reader.onerror = rej
+    reader.readAsDataURL(file)
+  })
+}
+
+// Resize image to maxPx on the longest side and return as JPEG base64
+// This keeps the payload small enough for Gemini's free tier
+function fileToBase64Resized(file, maxPx = 1024) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader()
+    reader.onerror = rej
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onerror = rej
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale)
+        const h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        // quality 0.85 keeps detail while cutting file size significantly
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+        res(dataUrl.split(',')[1])
+      }
+      img.src = e.target.result
+    }
     reader.readAsDataURL(file)
   })
 }

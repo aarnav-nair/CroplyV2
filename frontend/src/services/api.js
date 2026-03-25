@@ -299,7 +299,7 @@ export async function askKisanBot(message, context, language = 'en') {
   // Log user prompt (fire-and-forget)
   logChat('user', message, { botType: 'kisanbot', language, ...context })
 
-  const reply = await callGroq({ model: 'llama-3.1-8b-instant', maxTokens: 200, system: systemPrompt, user: message, language })
+  const reply = await callGemini({ maxTokens: 200, system: systemPrompt, user: message })
 
   // Log bot reply
   logChat('bot', reply, { botType: 'kisanbot', language, ...context })
@@ -325,7 +325,7 @@ export async function askNavBot(message, language = 'en') {
   // Log user prompt
   logChat('user', message, { botType: 'navbot', language })
 
-  const reply = await callGroq({ model: 'llama-3.1-8b-instant', maxTokens: 150, system: systemPrompt, user: message, language })
+  const reply = await callGemini({ maxTokens: 150, system: systemPrompt, user: message })
 
   // Log bot reply
   logChat('bot', reply, { botType: 'navbot', language })
@@ -333,33 +333,32 @@ export async function askNavBot(message, language = 'en') {
   return reply
 }
 
-// ── Shared Groq caller ────────────────────────────────────────────────────────
-async function callGroq({ model, maxTokens, system, user, language }) {
-  const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY
-  if (!GROQ_KEY) {
-    throw new Error('VITE_GROQ_API_KEY is not set in your .env.local file.')
+// ── Shared Gemini chat caller ─────────────────────────────────────────────────
+async function callGemini({ maxTokens, system, user }) {
+  const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY
+  if (!GEMINI_KEY) {
+    throw new Error('VITE_GEMINI_API_KEY is not set in your .env.local file.')
   }
 
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + GROQ_KEY,
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    }),
-  })
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 },
+      }),
+    }
+  )
 
   const data = await res.json()
-  if (data.error) throw new Error('Groq: ' + data.error.message)
-  const text = data.choices?.[0]?.message?.content
-  if (!text) throw new Error('Groq returned an empty response.')
+  if (!res.ok || data.error) {
+    throw new Error('Gemini: ' + (data.error?.message || res.statusText))
+  }
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+  if (!text) throw new Error('Gemini returned an empty response.')
   return text
 }
 

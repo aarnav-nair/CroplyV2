@@ -1,4 +1,4 @@
-# 🌿 Kisan AI — Smart Crop Disease Detection & Agri-Marketplace
+# 🌿 Croply — Smart Crop Disease Detection & Agri-Marketplace
 
 > **Hackerz Street 4.0 | Manipal University Jaipur | Agriculture Track — Problem #2**
 

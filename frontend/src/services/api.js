@@ -2,7 +2,7 @@ import axios from 'axios'
 import { MOCK_DETECTION, MOCK_PRODUCTS, MOCK_ALERTS, MOCK_DISEASES } from '../data/mockData.js'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
-const api = axios.create({ baseURL: API_BASE, timeout: 10000 })
+const api = axios.create({ baseURL: API_BASE, timeout: 60000 })
 
 // ── Auth token helpers ────────────────────────────────────────────────────────
 export function saveToken(token) {

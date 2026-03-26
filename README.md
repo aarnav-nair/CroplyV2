@@ -1,4 +1,5 @@
 # 🌿 CroplyV2 — AI-Powered Crop Intelligence & Agri-Marketplace
+https://croply-kohl.vercel.app/
 
 > **Empowering farmers with instant AI disease diagnosis, multi-lingual support, and direct access to targeted agricultural remedies.**
 

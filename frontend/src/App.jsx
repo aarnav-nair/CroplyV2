@@ -6,6 +6,7 @@ import ResultsPage from "./components/ResultsPage.jsx";
 import CartPage from "./components/CartPage.jsx";
 import AlertMapPage from "./components/AlertMapPage.jsx";
 import HistoryPage from "./components/HistoryPage.jsx";
+import ProfilePage from "./components/ProfilePage.jsx";
 import LandingPage from "./components/LandingPage.jsx";
 import AuthPage from "./components/AuthPage.jsx";
 import NavBot from "./components/NavBot.jsx";
@@ -47,6 +48,14 @@ export default function App() {
   const [cart, setCart] = useLocalState("croply-cart", []);
   const [scanHistory, setScanHistory] = useLocalState("croply-history", []);
   const [orders, setOrders] = useLocalState("croply-orders", []);
+  const [profileData, setProfileData] = useLocalState("croply-profile", {
+    fullName: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    address: "",
+    primaryCrops: "",
+    farmSize: ""
+  });
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -196,6 +205,7 @@ export default function App() {
             onNavigate={navigate}
             lang={lang}
             onOrderPlaced={handleOrderPlaced}
+            profileData={profileData}
           />
         )}
         {view === "map" && <AlertMapPage lang={lang} />}
@@ -209,6 +219,14 @@ export default function App() {
               setScanHistory([]);
               toast.success("History cleared");
             }}
+          />
+        )}
+        {view === "profile" && (
+          <ProfilePage
+            profileData={profileData}
+            setProfileData={setProfileData}
+            lang={lang}
+            onLogout={handleLogout}
           />
         )}
       </main>

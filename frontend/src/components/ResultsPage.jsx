@@ -1,153 +1,29 @@
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { getRecommendations } from '../services/api.js'
 import KisanBot from './KisanBot.jsx'
 import DiseaseProgressionTracker from './DiseaseProgressionTracker.jsx'
 import {
-  ArrowLeft, ShoppingCart, Info, MessageCircle,
-  ChevronDown, ChevronUp, Star, Shield, Leaf,
-  Zap, Wind, Layers, AlertTriangle, CheckCircle2,
-  Package, Share2, Calculator
+  ArrowLeft, Share2, AlertTriangle, CheckCircle2,
+  Zap, Wind, FlaskConical, MessageCircle, ShoppingBag
 } from 'lucide-react'
 
-// ── Dosage Calculator helpers ─────────────────────────────────────────────────
-// Parses "5ml per litre" / "2.5g per litre" from product.dosage string
-function parseDosage(dosageStr) {
-  if (!dosageStr) return null
-  const m = dosageStr.match(/([\d.]+)\s*(ml|g|kg|litre|l)\s*per\s*(litre|liter|l\b)/i)
-  if (!m) return null
-  return { amount: parseFloat(m[1]), unit: m[2].toLowerCase() }
-}
-
-// Parses package size from product.unit string e.g. "1 litre bottle" → 1000 (in ml)
-// or "500g pack" → 500 (in g)
-function parsePackageSize(unitStr) {
-  if (!unitStr) return null
-  const m = unitStr.match(/([\d.]+)\s*(ml|g|kg|litre|liter|l)\b/i)
-  if (!m) return null
-  let val = parseFloat(m[1])
-  const u = m[2].toLowerCase()
-  if (u === 'litre' || u === 'liter' || u === 'l') val = val * 1000 // to ml
-  if (u === 'kg') val = val * 1000 // to g
-  return val
-}
-
-// 1 acre ≈ 200 litres of spray solution (standard for field crops in India)
-const LITRES_PER_ACRE = 200
-
-function calcDosage(product, acres) {
-  const parsed = parseDosage(product.dosage)
-  const pkgSize = parsePackageSize(product.unit)
-  if (!parsed || !pkgSize || acres <= 0) return null
-
-  const totalWater = acres * LITRES_PER_ACRE            // litres of water
-  const productNeeded = totalWater * parsed.amount       // ml or g needed
-  const packs = Math.ceil(productNeeded / pkgSize)
-  const totalCost = packs * product.price_per_unit
-
-  // Display amount
-  let displayQty, displayUnit
-  if (parsed.unit === 'ml' || parsed.unit === 'l') {
-    if (productNeeded >= 1000) {
-      displayQty = (productNeeded / 1000).toFixed(2).replace(/\.?0+$/, '')
-      displayUnit = 'litres'
-    } else {
-      displayQty = productNeeded.toFixed(0)
-      displayUnit = 'ml'
-    }
-  } else {
-    if (productNeeded >= 1000) {
-      displayQty = (productNeeded / 1000).toFixed(2).replace(/\.?0+$/, '')
-      displayUnit = 'kg'
-    } else {
-      displayQty = productNeeded.toFixed(0)
-      displayUnit = 'g'
-    }
-  }
-
-  return { displayQty, displayUnit, packs, totalCost }
-}
-
-function DosageCalculator({ product, lang }) {
-  const hi = lang === 'hi'
-  const [acres, setAcres] = useState('')
-  const result = acres ? calcDosage(product, parseFloat(acres)) : null
-  const canCalc = !!parseDosage(product.dosage)
-
-  if (!canCalc) return (
-    <div className="p-2.5 rounded-lg mb-3" style={{background:'var(--bg)'}}>
-      <p className="font-body text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{color:'var(--muted)'}}>
-        {hi ? 'खुराक' : 'Dosage'}
-      </p>
-      <p className="font-body text-xs font-medium" style={{color:'var(--dark)'}}>{product.dosage}</p>
-    </div>
-  )
-
-  return (
-    <div className="rounded-2xl mb-4 overflow-hidden"
-         style={{border:'2px solid var(--green-lt)'}}>
-      {/* Header row */}
-      <div className="flex items-center gap-3 px-4 py-3"
-           style={{background:'var(--green)'}}>
-        <Calculator className="w-5 h-5 text-white flex-shrink-0"/>
-        <span className="font-body text-sm font-bold text-white">
-          {hi ? 'खुराक कैलकुलेटर' : 'Dosage Calculator'}
-        </span>
-      </div>
-
-      <div className="p-4" style={{background:'var(--bg)'}}>
-        {/* Dosage reference */}
-        <p className="font-body text-sm mb-3" style={{color:'var(--muted)'}}>
-          {hi ? 'दर: ' : 'Rate: '}<strong style={{color:'var(--dark)'}}>{product.dosage}</strong>
-        </p>
-
-        {/* Acres input */}
-        <div className="flex items-center gap-3 mb-3">
-          <input
-            type="number"
-            min="0.1" step="0.1"
-            value={acres}
-            onChange={e => setAcres(e.target.value)}
-            placeholder={hi ? 'एकड़ दर्ज करें' : 'Enter field size'}
-            className="input text-base flex-1 font-semibold"
-            style={{height:'44px', padding:'8px 14px', fontSize:'16px'}}
-          />
-          <span className="font-body text-sm font-bold flex-shrink-0"
-                style={{color:'var(--dark)'}}>
-            {hi ? 'एकड़' : 'acres'}
-          </span>
-        </div>
-
-        {/* Result */}
-        {result && (
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: hi ? 'उत्पाद चाहिए' : 'Product needed', val: `${result.displayQty} ${result.displayUnit}`, color: 'var(--green)' },
-              { label: hi ? 'पैक / बोतल' : 'Packs / bottles', val: result.packs, color: 'var(--dark)' },
-              { label: hi ? 'कुल लागत' : 'Total cost', val: `₹${result.totalCost}`, color: '#0369a1' },
-            ].map(d => (
-              <div key={d.label} className="p-3 rounded-xl text-center"
-                   style={{background:'var(--surface)', border:'1.5px solid var(--border)'}}>
-                <p className="font-display text-xl font-extrabold leading-none mb-1" style={{color: d.color}}>{d.val}</p>
-                <p className="font-body text-xs leading-tight" style={{color:'var(--muted)'}}>{d.label}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 const SEV = {
-  mild:     { label:'Mild',     label_hi:'हल्का',  cls:'sev-mild',     icon:CheckCircle2,  desc:'Early stage — act quickly to prevent spread.' },
-  moderate: { label:'Moderate', label_hi:'मध्यम', cls:'sev-moderate', icon:AlertTriangle, desc:'Active infection — treatment required this week.' },
-  severe:   { label:'Severe',   label_hi:'गंभीर', cls:'sev-severe',   icon:Zap,           desc:'Critical — immediate treatment is essential.' },
+  mild:     { label:'Mild',     label_hi:'हल्का',  cls:'bg-green-100 text-green-700 border-green-200', icon:CheckCircle2,  desc:'Early stage. Easy to fix with basic care.' },
+  moderate: { label:'Moderate', label_hi:'मध्यम', cls:'bg-amber-100 text-amber-700 border-amber-200', icon:AlertTriangle, desc:'Active problem. Needs attention soon to prevent spread.' },
+  severe:   { label:'Severe',   label_hi:'गंभीर', cls:'bg-red-100 text-red-700 border-red-200',   icon:Zap,           desc:'Serious problem. Immediate action needed to save the crop.' },
 }
 
-
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
+}
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+}
 
 function ProductCard({ product, onAddToCart, lang }) {
-  const [expanded, setExpanded] = useState(false)
   const [added, setAdded] = useState(false)
 
   function handleAdd() {
@@ -157,84 +33,49 @@ function ProductCard({ product, onAddToCart, lang }) {
   }
 
   return (
-    <div className="card-hover" style={{padding:'20px'}}>
-      {/* Top row */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap gap-2 mb-1.5">
+    <motion.div variants={fadeUp} className="card p-6 md:p-8 bg-surface shadow-xl shadow-primary/5 border-none rounded-[32px]">
+      <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-8">
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             {product.organic_certified && (
-              <span className="text-[10px] font-body font-bold uppercase tracking-wider text-green-700">Organic Certified</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">Organic Safe</span>
             )}
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted border border-border px-3 py-1 rounded-full">{product.manufacturer}</span>
           </div>
-          <h4 className="font-display text-base font-bold leading-snug" style={{color:'var(--dark)'}}>
-            {product.name}
-          </h4>
-          <p className="font-body text-xs mt-0.5" style={{color:'var(--muted)'}}>
-            {product.manufacturer}
-          </p>
+          <h4 className="text-3xl font-bold text-dark leading-tight">{product.name}</h4>
         </div>
-        <div className="text-right flex-shrink-0">
-          <p className="font-display text-2xl font-extrabold" style={{color:'var(--green)'}}>₹{product.price_per_unit}</p>
-          <p className="font-body text-xs" style={{color:'var(--muted)'}}>/{product.unit}</p>
-          <div className="flex items-center justify-end gap-1 mt-1">
-            <Star className="w-3 h-3 fill-current" style={{color:'var(--gold)'}}/>
-            <span className="font-body text-xs font-semibold" style={{color:'var(--dark)'}}>{product.rating}</span>
-          </div>
+        <div className="text-left md:text-right bg-surface px-6 py-3 rounded-2xl border border-border">
+          <div className="text-3xl font-black text-primary mb-1">₹{product.price_per_unit}</div>
+          <div className="text-[10px] font-bold text-muted uppercase tracking-widest">Per {product.unit}</div>
         </div>
       </div>
 
-      {/* Why recommended */}
-      <div className="p-3 rounded-xl mb-3" style={{background:'#F0FDF4',border:'1px solid #BBF7D0'}}>
-        <p className="font-body text-xs font-bold mb-1.5 uppercase tracking-wide" style={{color:'var(--green-mid)'}}>
-          {lang==='hi'?'यह क्यों काम करेगा':'Why this works'}
-        </p>
-        <p className="font-body text-sm leading-relaxed" style={{color:'#166534'}}>
-          {product.why_recommended}
-        </p>
-      </div>
-
-      {/* Dosage Calculator */}
-      <DosageCalculator product={product} lang={lang} />
-
-      {/* Pre-harvest interval */}
-      <div className="p-2.5 rounded-lg mb-3" style={{background:'var(--bg)'}}>
-        <p className="font-body text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{color:'var(--muted)'}}>
-          {lang==='hi' ? 'पूर्व-कटाई अंतराल' : 'Pre-harvest interval'}
-        </p>
-        <p className="font-body text-xs font-medium" style={{color:'var(--dark)'}}>{product.pre_harvest_interval}</p>
-      </div>
-
-      {/* Expand */}
-      <button onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-1 text-xs font-body mb-3 transition-colors"
-              style={{color:'var(--muted)'}}>
-        {expanded ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>}
-        {expanded ? (lang==='hi'?'कम दिखाएं':'Show less') : (lang==='hi'?'और विवरण':'More details')}
-      </button>
-
-      {expanded && (
-        <div className="grid grid-cols-2 gap-2 mb-3 text-xs font-body">
-          {[
-            {label:'Active Ingredient', val:product.active_ingredient},
-            {label:'Type', val:product.type},
-            {label:'Classification', val:product.classification},
-            {label:'Stock', val:`${product.stock} units`},
-          ].map(d => (
-            <div key={d.label} className="p-2.5 rounded-lg" style={{background:'var(--bg)'}}>
-              <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{color:'var(--muted)'}}>{d.label}</p>
-              <p className="font-medium" style={{color:'var(--dark)'}}>{d.val}</p>
-            </div>
-          ))}
+      <div className="p-5 md:p-6 bg-primary/5 border border-primary/10 rounded-[24px] mb-8 relative">
+        <div className="absolute -left-2 -top-2 w-8 h-8 rounded-full bg-accent flex items-center justify-center shadow-md">
+           <span className="text-xl leading-none">💡</span>
         </div>
-      )}
+        <p className="text-[11px] font-bold uppercase tracking-widest text-primary mb-3 ml-4">Why we recommend this</p>
+        <p className="text-base font-medium leading-relaxed italic text-dark/80 ml-4">
+          "{product.why_recommended}"
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="p-4 bg-surface rounded-[20px] shadow-sm border border-border">
+          <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2">How much to use</p>
+          <p className="font-bold text-base text-dark">{product.dosage}</p>
+        </div>
+        <div className="p-4 bg-surface rounded-[20px] shadow-sm border border-border">
+          <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2">When to harvest</p>
+          <p className="font-bold text-base text-dark">{product.pre_harvest_interval}</p>
+        </div>
+      </div>
 
       <button onClick={handleAdd}
-              className={`btn-md w-full font-bold transition-all ${added ? 'btn-outline' : 'btn-primary'}`}>
-        {added
-          ? <><CheckCircle2 className="w-4 h-4 text-green-600"/>Added to cart</>
-          : <><ShoppingCart className="w-4 h-4"/>{lang==='hi'?'कार्ट में डालें':'Add to Cart'}</>}
+              className={`btn-lg w-full font-bold uppercase tracking-widest text-sm transition-all shadow-xl ${added ? 'btn-outline border-primary text-primary shadow-none' : 'btn-primary'}`}>
+        {added ? 'Added to Cart' : 'Add to Helper Cart'}
       </button>
-    </div>
+    </motion.div>
   )
 }
 
@@ -254,176 +95,160 @@ export default function ResultsPage({ result, imagePreview, onAddToCart, onNavig
   }, [result])
 
   return (
-    <div className="container py-10">
-      {/* Back */}
-      <button onClick={() => onNavigate('scan')}
-              className="flex items-center gap-2 text-sm font-body mb-6 transition-colors"
-              style={{color:'var(--muted)'}}>
-        <ArrowLeft className="w-4 h-4"/>
-        {lang==='hi'?'नया स्कैन करें':'New Scan'}
-      </button>
-
-      {/* Top banner */}
-      <div className="card mb-6 p-5" style={{borderLeft:'4px solid var(--green)'}}>
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5" style={{color:'var(--green)'}}/>
-            <div>
-              <p className="font-body text-xs font-bold uppercase tracking-wider" style={{color:'var(--green)'}}>
-                {lang==='hi'?'AI जांच पूरी हुई':'Analysis Complete'}
-              </p>
-              <p className="font-body text-xs" style={{color:'var(--muted)'}}>
-                Scan ID #{result.scan_id} · {new Date(result.timestamp).toLocaleString()}
-              </p>
-            </div>
-          </div>
-          <button className="btn-outline btn-sm gap-2">
-            <Share2 className="w-3.5 h-3.5"/>
-            {lang==='hi'?'शेयर करें':'Share Report'}
+    <div className="section-sm overflow-hidden bg-bg min-h-[calc(100vh-80px)]">
+      <div className="container max-w-6xl pt-4">
+        
+        {/* Navigation */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-10">
+          <button onClick={() => onNavigate('scan')} className="btn text-muted hover:text-dark hover:bg-surface border border-transparent hover:border-border rounded-full px-6 py-3 w-full sm:w-auto">
+            <ArrowLeft className="w-5 h-5 mr-3"/>
+            {lang==='hi'?'नया स्कैन':'Back to Scan'}
           </button>
-        </div>
-      </div>
-
-      {/* Main layout */}
-      <div className="grid lg:grid-cols-[380px_1fr] gap-6">
-
-        {/* ── Left: Disease card ─────────────────────────────────── */}
-        <div className="space-y-4">
-          {/* Leaf + Grad-CAM */}
-          <div className="card p-0 overflow-hidden">
-            <div className="relative aspect-video bg-gray-50">
-              {imagePreview && (
-                <img src={imagePreview} alt="Scanned leaf"
-                     className="w-full h-full object-cover"/>
-              )}
-              {result.gradcam_base64 && (
-                <img src={`data:image/svg+xml;base64,${result.gradcam_base64}`}
-                     alt="Grad-CAM"
-                     className="absolute inset-0 w-full h-full object-cover opacity-55 mix-blend-multiply"/>
-              )}
-              <div className="absolute inset-0"
-                   style={{background:'linear-gradient(180deg,transparent 50%,rgba(0,0,0,0.5) 100%)'}}/>
-              <div className="absolute bottom-3 left-3 px-2.5 py-1.5 rounded-lg"
-                   style={{background:'rgba(0,0,0,0.55)',backdropFilter:'blur(4px)'}}>
-                <span className="text-white text-[10px] font-body font-bold uppercase tracking-wider">Analysis Overlay</span>
-              </div>
-            </div>
-
-            {/* Confidence */}
-            <div className="p-4 flex flex-col justify-center border-t" style={{borderColor:'var(--border)'}}>
-              <p className="font-body text-xs font-bold uppercase tracking-wider mb-2" style={{color:'var(--muted)'}}>
-                {lang==='hi'?'AI विश्वास स्तर':'AI Confidence'}
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{background:'var(--bg)'}}>
-                  <div className="h-full rounded-full" style={{width:`${result.confidence}%`, background:'var(--green-lt)'}}/>
-                </div>
-                <span className="font-body text-sm font-bold" style={{color:'var(--dark)'}}>{Math.round(result.confidence)}%</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Disease Progression Tracker */}
-          <DiseaseProgressionTracker result={result} lang={lang} />
-
-          {/* Disease info */}
-          <div className="card space-y-4">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className={sev.cls}>
-                  <SevIcon className="w-3 h-3"/>
-                  {lang==='hi' ? sev.label_hi : sev.label} Severity
-                </span>
-                <span className="badge-neutral">{result.crop}</span>
-              </div>
-              <h2 className="font-display text-2xl font-extrabold" style={{color:'var(--dark)'}}>
-                {lang==='hi' ? result.disease_name_hi : result.disease_name}
-              </h2>
-              {result.pathogen && (
-                <p className="font-body text-xs mt-1 italic" style={{color:'var(--muted)'}}>{result.pathogen}</p>
-              )}
-            </div>
-
-            <div className="p-3 rounded-xl text-sm font-body" style={{background:'#FEF3C7',border:'1px solid #FDE68A'}}>
-              <AlertTriangle className="w-4 h-4 inline mr-1.5 text-amber-600"/>
-              <span className="font-semibold text-amber-800">{sev.desc}</span>
-            </div>
-
-            <hr style={{borderColor:'var(--border)'}}/>
-
-            <p className="font-body text-sm leading-relaxed" style={{color:'var(--ink-soft)','--ink-soft':'#374151'}}>
-              {lang==='hi' ? result.description_hi : result.description}
-            </p>
-
-            <div className="space-y-2.5">
-              {[
-                { icon: Info,   label: lang==='hi'?'कारण':'Cause',        val: result.causes },
-                { icon: Wind,   label: lang==='hi'?'फैलाव की गति':'Spread Rate', val: result.spread_rate },
-                { icon: Layers, label: lang==='hi'?'प्रभावित भाग':'Affects',  val: result.affected_parts?.join(', ') },
-              ].map(d => (
-                <div key={d.label} className="flex items-start gap-3 text-sm font-body">
-                  <d.icon className="w-4 h-4 flex-shrink-0 mt-0.5" style={{color:'var(--green-mid)'}}/>
-                  <div>
-                    <span className="font-semibold" style={{color:'var(--dark)'}}>{d.label}: </span>
-                    <span style={{color:'var(--muted)'}}>{d.val}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Right: Tabs ────────────────────────────────────────── */}
-        <div>
-          {/* Tab bar */}
-          <div className="flex border-b mb-5" style={{borderColor:'var(--border)'}}>
-            {[
-              { id:'treatment', label:lang==='hi'?'अनुशंसित उपचार':'Recommended Treatments', icon:Package },
-              { id:'bot',       label:lang==='hi'?'क्रॉपली बॉट':'Ask Croply Bot',               icon:MessageCircle },
-            ].map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                      className={`flex items-center gap-2 px-4 py-3 text-sm font-body font-semibold -mb-px transition-all ${tab===t.id?'tab-active':'tab-inactive'}`}>
-                <t.icon className="w-4 h-4"/>
-                {t.label}
+          
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-4 w-full sm:w-auto">
+             <div className="hidden lg:block text-right bg-surface px-4 py-2 rounded-2xl shadow-sm border border-border">
+                <p className="text-[9px] font-bold text-muted uppercase tracking-widest">Scan ID</p>
+                <p className="text-xs font-bold text-primary">{result.scan_id}</p>
+             </div>
+              <button className="btn-outline border-border bg-surface shadow-sm hover:border-primary hover:text-primary rounded-full px-6 py-3">
+                 <Share2 className="w-4 h-4 mr-2"/>
+                 {lang === 'hi' ? 'साझा करें' : 'Share Results'}
               </button>
-            ))}
           </div>
+        </motion.div>
 
-          {/* Treatments */}
-          {tab==='treatment' && (
-            <div>
-              {loading ? (
-                <div className="space-y-4">
-                  {[1,2,3].map(n => (
-                    <div key={n} className="card space-y-3">
-                      <div className="skeleton h-4 w-2/3"/>
-                      <div className="skeleton h-3 w-1/2"/>
-                      <div className="skeleton h-16"/>
-                      <div className="skeleton h-10"/>
+        <div className="grid lg:grid-cols-[450px_1fr] gap-10 xl:gap-14 items-start pb-20">
+          
+          {/* Left: What we found */}
+          <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-8 sticky top-28">
+            <motion.div variants={fadeUp} className="card overflow-hidden border-none p-0 bg-surface shadow-2xl shadow-primary/10 rounded-[40px]">
+              
+              <div className="relative aspect-square md:aspect-video lg:aspect-square">
+                <img src={imagePreview} alt="" className="w-full h-full object-cover"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-dark/90 via-dark/20 to-transparent" />
+                
+                <div className="absolute top-6 right-6">
+                   <div className="px-5 py-2.5 rounded-2xl bg-surface/20 backdrop-blur-md border border-white/30 text-white font-black text-sm shadow-xl tracking-wide">
+                      {result.crop}
+                   </div>
+                </div>
+
+                <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
+                    <div className={`px-5 py-2.5 rounded-full border-2 flex items-center gap-2 font-black text-xs uppercase tracking-wider shadow-2xl ${sev.cls}`}>
+                       <SevIcon className="w-4 h-4" />
+                       {lang === 'hi' ? sev.label_hi : sev.label} Issue
                     </div>
-                  ))}
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <p className="font-body text-xs" style={{color:'var(--muted)'}}>
-                      {products.length} treatments matched · organic shown first
-                    </p>
-                    <span className="badge-green text-xs">
-                      <CheckCircle2 className="w-3 h-3"/>
-                      Disease-specific
-                    </span>
-                  </div>
-                  {products.map(p => (
-                    <ProductCard key={p.id} product={p} onAddToCart={onAddToCart} lang={lang}/>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+              </div>
 
-          {/* Bot */}
-          {tab==='bot' && <KisanBot result={result} lang={lang}/>}
+              <div className="p-8 md:p-10">
+                  <h1 className="text-4xl md:text-5xl font-bold mb-3 text-dark leading-tight tracking-tight">
+                     {lang === 'hi' ? result.disease_name_hi : result.disease_name}
+                  </h1>
+                  <p className="text-primary font-bold text-sm uppercase tracking-widest mb-8">Identified Issue: {result.pathogen || 'Common Issue'}</p>
+                  
+                  <div className={`p-6 rounded-[24px] mb-10 ${sev.cls.replace('border-','border-2 border-')}`}>
+                     <div className="flex items-center gap-3 mb-2 font-black uppercase tracking-widest text-[11px]">
+                        <AlertTriangle className="w-4 h-4" />
+                        Important Note
+                     </div>
+                    <p className="font-medium leading-relaxed">{sev.desc}</p>
+                 </div>
+
+                  <div className="space-y-8">
+                    <div>
+                       <h3 className="text-[11px] font-black text-muted uppercase tracking-widest mb-4">About this issue</h3>
+                       <p className="text-lg leading-relaxed text-dark/80 font-medium">{lang === 'hi' ? result.description_hi : result.description}</p>
+                    </div>
+
+                     <div className="grid grid-cols-1 gap-4">
+                        <div className="flex items-center gap-5 p-5 bg-surface border border-border shadow-sm rounded-3xl">
+                           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                             <FlaskConical className="w-6 h-6 text-primary" />
+                           </div>
+                           <div>
+                              <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Probable Cause</p>
+                              <p className="font-bold text-dark text-base">{result.causes}</p>
+                           </div>
+                        </div>
+                        <div className="flex items-center gap-5 p-5 bg-surface border border-border shadow-sm rounded-3xl">
+                           <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                             <Wind className="w-6 h-6 text-accent" />
+                           </div>
+                           <div>
+                              <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Spread Rate</p>
+                              <p className="font-bold text-dark text-base">{result.spread_rate}</p>
+                           </div>
+                        </div>
+                     </div>
+                 </div>
+              </div>
+            </motion.div>
+
+            <motion.div variants={fadeUp}>
+              <DiseaseProgressionTracker result={result} lang={lang} />
+            </motion.div>
+          </motion.div>
+
+          {/* Right: Solutions */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="mt-8 lg:mt-0">
+            <div className="flex gap-2 mb-10 p-2 bg-surface shadow-md border border-primary/10 rounded-[28px]">
+               <button 
+                  onClick={() => setTab('treatment')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-[20px] font-bold uppercase tracking-wider text-[11px] transition-all ${tab === 'treatment' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-primary hover:bg-primary/5'}`}
+               >
+                  <ShoppingBag className="w-4 h-4" />
+                  {lang === 'hi' ? 'सुझाए गए समाधान' : 'Helper Carts'}
+               </button>
+               <button 
+                  onClick={() => setTab('bot')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-4 px-6 rounded-[20px] font-bold uppercase tracking-wider text-[11px] transition-all ${tab === 'bot' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-primary hover:bg-primary/5'}`}
+               >
+                  <MessageCircle className="w-4 h-4" />
+                  {lang === 'hi' ? 'मदद मांगें' : 'Chat & Ask Help'}
+               </button>
+            </div>
+
+            {tab === 'treatment' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                 <div className="flex items-end justify-between px-2 mb-8">
+                    <div>
+                      <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-dark mb-2">Helper Kits</h2>
+                      <p className="text-muted font-medium">Ready-made solutions to fix the issue.</p>
+                    </div>
+                    <span className="text-[12px] font-black text-primary bg-primary/10 px-4 py-2 rounded-full uppercase tracking-widest">{products.length} Found</span>
+                 </div>
+
+                 {loading ? (
+                   <div className="space-y-6">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="card h-64 skeleton rounded-[32px] border-none shadow-xl" />
+                      ))}
+                   </div>
+                 ) : (
+                    <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid gap-8">
+                       {products.map(p => (
+                         <ProductCard key={p.id} product={p} onAddToCart={onAddToCart} lang={lang} />
+                       ))}
+                    </motion.div>
+                 )}
+              </motion.div>
+            )}
+
+            {tab === 'bot' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-0 overflow-hidden bg-surface shadow-2xl shadow-primary/10 border-none rounded-[40px]">
+                 <div className="bg-primary text-white p-10 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-surface/10 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/3" />
+                    <h3 className="text-4xl font-bold mb-2 relative z-10">Croply Assistant</h3>
+                    <p className="text-white/80 text-[11px] font-black uppercase tracking-widest relative z-10">Chat about your scan results</p>
+                 </div>
+                 <div className="p-4 bg-surface">
+                    <KisanBot result={result} lang={lang} />
+                 </div>
+              </motion.div>
+            )}
+          </motion.div>
+
         </div>
       </div>
     </div>

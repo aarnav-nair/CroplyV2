@@ -1,141 +1,57 @@
 import { useState, useRef, useEffect } from "react";
-import {
-  MessageCircle,
-  X,
-  Mic,
-  MicOff,
-  Send,
-  Bot,
-  Loader2,
-  Sparkles,
-} from "lucide-react";
+import { MessageCircle, X, Mic, MicOff, Send, Bot, Loader2, Sparkles, ShieldCheck, CloudRain, AlertTriangle, Zap, CheckCircle } from "lucide-react";
 import { askNavBot } from "../services/api.js";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Navigation intents — matched against user message
 const INTENTS = [
-  {
-    keys: [
-      "scan",
-      "स्कैन",
-      "स्कैन करें",
-      "photo",
-      "फोटो",
-      "disease",
-      "बीमारी",
-      "leaf",
-      "पत्ती",
-      "detect",
-      "पहचान",
-      "upload",
-      "अपलोड",
-    ],
-    view: "scan",
-    reply: "Taking you to Scan Crop →",
-    reply_hi: "फसल स्कैन पेज पर ले जा रहा हूं →",
-  },
-  {
-    keys: [
-      "map",
-      "मैप",
-      "alert",
-      "अलर्ट",
-      "outbreak",
-      "प्रकोप",
-      "district",
-      "जिला",
-      "state",
-      "राज्य",
-      "spread",
-      "फैलाव",
-    ],
-    view: "map",
-    reply: "Opening the Disease Alert Map →",
-    reply_hi: "रोग अलर्ट मैप खोल रहा हूं →",
-  },
-  {
-    keys: [
-      "history",
-      "इतिहास",
-      "past",
-      "पिछला",
-      "order",
-      "ऑर्डर",
-      "previous",
-      "पुराना",
-      "scan history",
-    ],
-    view: "history",
-    reply: "Opening your Scan History →",
-    reply_hi: "आपका स्कैन इतिहास खोल रहा हूं →",
-  },
-  {
-    keys: ["cart", "कार्ट", "buy", "खरीद", "purchase", "basket", "checkout"],
-    view: "cart",
-    reply: "Opening your Cart →",
-    reply_hi: "आपका कार्ट खोल रहा हूं →",
-  },
-  {
-    keys: ["home", "होम", "start", "शुरू", "main", "मुख्य", "back", "वापस"],
-    view: "home",
-    reply: "Going to Home →",
-    reply_hi: "होम पेज पर जा रहा हूं →",
-  },
+  { keys: ["scan", "स्कैन", "photo", "disease", "leaf", "detect"], view: "scan", reply: "Checking your crop now...", reply_hi: "फसल जाँच शुरू..." },
+  { keys: ["map", "मैप", "alert", "outbreak", "district", "state"], view: "map", reply: "Opening the alert map...", reply_hi: "अलर्ट मैप खोल रहा हूं..." },
+  { keys: ["history", "इतिहास", "past", "order", "scan history"], view: "history", reply: "Opening your history...", reply_hi: "आपका इतिहास खोल रहा हूं..." },
+  { keys: ["cart", "कार्ट", "buy", "purchase", "basket", "checkout"], view: "cart", reply: "Opening your cart...", reply_hi: "आपका कार्ट खोल रहा हूं..." },
+  { keys: ["home", "होम", "start", "main", "back"], view: "home", reply: "Going back home...", reply_hi: "होम पेज पर जा रहा हूं..." },
 ];
 
 const GREETINGS = ["hello", "hi", "hey", "नमस्ते", "हेलो", "हाय", "namaste"];
-const HELP_KEYS = [
-  "help",
-  "मदद",
-  "what can you do",
-  "क्या कर सकते हो",
-  "options",
-  "विकल्प",
-];
+const HELP_KEYS = ["help", "मदद", "what can you do", "options"];
+
+async function fetchDistrict(lat, lon) {
+  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, { headers: { 'Accept-Language': 'en' } })
+  const addr = (await res.json()).address || {}
+  return addr.county || addr.state_district || addr.city || addr.town || addr.village || 'Your Farm'
+}
 
 function detectIntent(text) {
   const lower = text.toLowerCase();
-  for (const intent of INTENTS) {
-    if (intent.keys.some((k) => lower.includes(k))) return intent;
-  }
+  for (const intent of INTENTS) { if (intent.keys.some((k) => lower.includes(k))) return intent; }
   return null;
 }
-function isGreeting(text) {
-  return GREETINGS.some((g) => text.toLowerCase().includes(g));
-}
-function isHelp(text) {
-  return HELP_KEYS.some((h) => text.toLowerCase().includes(h));
-}
+function isGreeting(text) { return GREETINGS.some((g) => text.toLowerCase().includes(g)); }
+function isHelp(text) { return HELP_KEYS.some((h) => text.toLowerCase().includes(h)); }
 
 const QUICK_ACTIONS = [
-  {
-    label: "Scan a crop",
-    label_hi: "फसल स्कैन करें",
-    view: "scan",
-    emoji: "📸",
-  },
-  { label: "Alert Map", label_hi: "अलर्ट मैप", view: "map", emoji: "🗺️" },
-  {
-    label: "My History",
-    label_hi: "मेरा इतिहास",
-    view: "history",
-    emoji: "📋",
-  },
-  { label: "My Cart", label_hi: "मेरा कार्ट", view: "cart", emoji: "🛒" },
+  { label: "Check Crop", label_hi: "फसल चेक करें", view: "scan", icon: Sparkles },
+  { label: "Alert Map", label_hi: "अलर्ट मैप", view: "map", icon: ShieldCheck },
 ];
 
-// Quick farming question chips shown on first open
-const FARMING_CHIPS_EN = [
-  "🌱 How to prevent crop disease?",
-  "💧 Best irrigation methods?",
-  "🌾 PM Kisan Yojana info",
-];
-const FARMING_CHIPS_HI = [
-  "🌱 फसल रोग कैसे रोकें?",
-  "💧 सबसे अच्छी सिंचाई विधि?",
-  "🌾 PM किसान योजना",
-];
+function isRaining(code) { return code >= 200 && code < 700 && code !== 600 && code !== 601 && code !== 602; }
 
-export default function NavBot({ onNavigate, lang }) {
+function getWeatherAdvice(weather, hi = false) {
+  if (!weather) return null;
+  const { code, wind, humidity: hum, rain } = weather;
+
+  if (isRaining(code) || rain > 0.3) {
+    return { level: 'danger', color: '#ef4444', icon: CloudRain, text: hi ? `बारिश हो रही है — अभी छिड़काव न करें।` : `It's raining — don't spray now.` }
+  }
+  if (hum >= 82 || (hum >= 75 && wind < 8)) {
+    return { level: 'warning', color: '#fbbf24', icon: AlertTriangle, text: hi ? `उच्च आर्द्रता (${hum}%) — बीमारी का खतरा।` : `High humidity (${hum}%) — watch for diseases.` }
+  }
+  if (wind >= 20) {
+    return { level: 'warning', color: '#fbbf24', icon: Zap, text: hi ? `तेज़ हवा (${wind} km/h) — छिड़काव प्रवहण।` : `Strong wind (${wind} km/h) — spraying may drift.` }
+  }
+  return { level: 'good', color: '#16a34a', icon: CheckCircle, text: hi ? `अच्छा मौसम — छिड़काव के लिए सुरक्षित।` : `Good weather — safe to work / spray.` }
+}
+
+export default function NavBot({ onNavigate, lang, weather }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
@@ -144,368 +60,158 @@ export default function NavBot({ onNavigate, lang }) {
   const [hasGreeted, setHasGreeted] = useState(false);
   const bottomRef = useRef(null);
   const recognitionRef = useRef(null);
-  const inputRef = useRef(null);
 
-  // Scroll to bottom on new message
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [msgs, loading]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, loading]);
 
-  // Greet on first open
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-      if (!hasGreeted) {
-        setHasGreeted(true);
-        setMsgs([
-          {
-            role: "bot",
-            text:
-              lang === "hi"
-                ? "नमस्ते! 👋 मैं Croply का AI असिस्टेंट हूं। नेविगेशन या खेती के किसी भी सवाल के लिए पूछें!"
-                : "Hi! 👋 I'm Croply's AI assistant. Ask me anything about farming, crop diseases, or let me take you anywhere in the app.",
-          },
-        ]);
-      }
+    if (open && !hasGreeted) {
+      setHasGreeted(true);
+      setMsgs([{ role: "bot", text: lang === "hi" ? "नमस्ते! मैं आपका एआई असिस्टेंट हूं। मैं आपकी क्या मदद कर सकता हूं?" : "Hello! I am your Croply assistant. How can I help you today?" }]);
     }
-  }, [open]);
-
-  function addMsg(role, text) {
-    setMsgs((prev) => [...prev, { role, text }]);
-  }
+  }, [open, lang]);
 
   async function handleSend(text) {
     const msg = (text || input).trim();
     if (!msg || loading) return;
-    setInput("");
-    addMsg("user", msg);
+    setInput(""); setMsgs(p => [...p, { role: "user", text: msg }]);
 
-    // ── 1. Greeting ────────────────────────────────────────────────────────
-    if (isGreeting(msg)) {
-      setTimeout(
-        () =>
-          addMsg(
-            "bot",
-            lang === "hi"
-              ? "नमस्ते! 😊 खेती के सवाल पूछें या नीचे दिए बटन से नेविगेट करें।"
-              : "Hello! 😊 Ask me a farming question or use the buttons below to navigate.",
-          ),
-        250,
-      );
-      return;
-    }
-
-    // ── 2. Help ────────────────────────────────────────────────────────────
-    if (isHelp(msg)) {
-      setTimeout(
-        () =>
-          addMsg(
-            "bot",
-            lang === "hi"
-              ? "मैं इन कामों में मदद कर सकता हूं:\n📸 फसल स्कैन करें\n🗺️ अलर्ट मैप\n📋 इतिहास\n🛒 कार्ट\n🏠 होम\n\nसाथ ही खेती के किसी भी सवाल का जवाब दूंगा!"
-              : "I can:\n📸 Navigate to Scan, Map, History, Cart, Home\n🌾 Answer farming questions — diseases, fertilisers, irrigation, govt schemes\n\nJust ask!",
-          ),
-        250,
-      );
-      return;
-    }
-
-    // ── 3. Navigation intent ───────────────────────────────────────────────
+    if (isGreeting(msg)) { setTimeout(() => setMsgs(p => [...p, { role: "bot", text: lang === "hi" ? "नमस्ते! आप क्या जानना चाहते हैं?" : "Hello! What would you like to know about your crops?" }]), 400); return; }
+    
     const intent = detectIntent(msg);
     if (intent) {
-      addMsg("bot", lang === "hi" ? intent.reply_hi : intent.reply);
-      setTimeout(() => {
-        onNavigate(intent.view);
-        setOpen(false);
-      }, 700);
+      setMsgs(p => [...p, { role: "bot", text: lang === "hi" ? intent.reply_hi : intent.reply }]);
+      setTimeout(() => { onNavigate(intent.view); setOpen(false); }, 800);
       return;
     }
 
-    // ── 4. AI farming answer (Groq) ────────────────────────────────────────
     setLoading(true);
     try {
       const reply = await askNavBot(msg, lang);
-      addMsg("bot", reply);
+      setMsgs(p => [...p, { role: "bot", text: reply }]);
     } catch (e) {
-      addMsg(
-        "bot",
-        "⚠️ " + (e.message || (lang === "hi"
-          ? "जवाब नहीं मिल सका। API key जांचें।"
-          : "Could not get a response. Check your VITE_GROQ_API_KEY.")),
-      );
-    } finally {
-      setLoading(false);
-    }
+      setMsgs(p => [...p, { role: "bot", text: "⚠️ Sorry, I could not connect. Please check your internet." }]);
+    } finally { setLoading(false); }
   }
 
-  // Voice input
   function toggleVoice() {
-    if (
-      !("webkitSpeechRecognition" in window || "SpeechRecognition" in window)
-    ) {
-      addMsg(
-        "bot",
-        "Voice input is not supported in this browser. Please use Chrome.",
-      );
-      return;
-    }
-    if (listening) {
-      recognitionRef.current?.stop();
-      setListening(false);
-      return;
-    }
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new SpeechRecognition();
+    if (!("webkitSpeechRecognition" in window)) { alert("Voice only supported on Chrome."); return; }
+    if (listening) { recognitionRef.current?.stop(); setListening(false); return; }
+    const rec = new window.webkitSpeechRecognition();
     rec.lang = lang === "hi" ? "hi-IN" : "en-IN";
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
     rec.onstart = () => setListening(true);
     rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
-    rec.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      setInput(transcript);
-      handleSend(transcript);
-    };
-    recognitionRef.current = rec;
-    rec.start();
+    rec.onresult = (e) => { const t = e.results[0][0].transcript; setInput(t); handleSend(t); };
+    recognitionRef.current = rec; rec.start();
   }
 
-  const farmingChips = lang === "hi" ? FARMING_CHIPS_HI : FARMING_CHIPS_EN;
-  const showChips = msgs.length <= 1 && !loading;
+  const adv = getWeatherAdvice(weather, lang === 'hi');
 
   return (
     <>
-      {/* Chat window */}
-      {open && (
-        <div
-          className="fixed bottom-20 right-4 z-50 flex flex-col rounded-2xl overflow-hidden shadow-2xl"
-          style={{
-            width: "320px",
-            height: "460px",
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          {/* Header */}
-          <div
-            className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
-            style={{ background: "var(--hero-bg)" }}
+      <AnimatePresence>
+        {open && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-28 right-6 z-50 flex flex-col rounded-[32px] overflow-hidden border-none shadow-2xl shadow-primary/10 bg-white w-[360px] h-[540px]"
           >
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: "var(--green)" }}
-            >
-              <Bot className="w-4 h-4 text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="font-display text-sm font-bold text-white leading-none">
-                Croply Assistant
-              </p>
-              <p
-                className="font-body text-[10px] leading-none mt-0.5"
-                style={{ color: "rgba(255,255,255,0.45)" }}
-              >
-                {listening
-                  ? lang === "hi"
-                    ? "🎙 सुन रहा हूं…"
-                    : "🎙 Listening…"
-                  : lang === "hi"
-                    ? "AI · टाइप करें या बोलें"
-                    : "AI · Type or speak"}
-              </p>
-            </div>
-            {/* AI badge */}
-            <div
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full mr-1"
-              style={{ background: "rgba(255,255,255,0.12)" }}
-            >
-              <Sparkles className="w-3 h-3 text-white/70" />
-              <span className="text-[10px] font-body text-white/70">AI</span>
-            </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="text-white/50 hover:text-white transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+            <header className="bg-primary text-white p-5 flex items-center justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl -mr-16 -mt-16 pointer-events-none" />
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 text-white flex items-center justify-center shadow-lg backdrop-blur-md">
+                  <Bot className="w-7 h-7" />
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-widest text-white/90">Assistant</p>
+                  {adv && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <adv.icon className="w-3.5 h-3.5" style={{ color: adv.color }} />
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-white/80">{adv.text}</span>
+                    </div>
+                  )}
+                  {!adv && <p className="text-[10px] font-bold uppercase text-white/60 tracking-wider mt-0.5">Always here to help</p>}
+                </div>
+              </div>
+              <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 hover:scale-105 transition-all text-white relative z-10">
+                <X className="w-4 h-4" />
+              </button>
+            </header>
 
-          {/* Messages */}
-          <div
-            className="flex-1 overflow-y-auto p-3 space-y-2"
-            style={{ background: "var(--bg)" }}
-          >
-            {msgs.map((m, i) => (
-              <div
-                key={i}
-                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {m.role === "bot" && (
-                  <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center mr-2 flex-shrink-0 mt-0.5"
-                    style={{ background: "var(--green)" }}
-                  >
-                    <Bot className="w-3 h-3 text-white" />
+            <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-bg custom-scrollbar relative">
+              <div className="absolute inset-0 bg-primary/5 border border-primary/10 border-dashed rounded-b-[32px] pointer-events-none opacity-50" />
+              
+              {msgs.map((m, i) => (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  key={i} 
+                  className={`flex ${m.role === "user" ? "justify-end" : "justify-start"} relative z-10`}
+                >
+                  <div className={`max-w-[85%] p-4 text-sm font-medium leading-relaxed shadow-sm ${
+                    m.role === "user" 
+                      ? "bg-primary text-white rounded-[24px] rounded-br-sm" 
+                      : "bg-white text-dark border border-border rounded-[24px] rounded-bl-sm"
+                  }`}>
+                    {m.text}
                   </div>
-                )}
-                <div
-                  className={m.role === "user" ? "bubble-user" : "bubble-bot"}
-                  style={{
-                    maxWidth: "78%",
-                    fontSize: "13px",
-                    whiteSpace: "pre-line",
-                  }}
-                >
-                  {m.text}
-                </div>
-              </div>
-            ))}
+                </motion.div>
+              ))}
+              {loading && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start relative z-10">
+                  <div className="bg-white px-5 py-4 border border-border shadow-sm rounded-[24px] rounded-bl-sm flex items-center gap-3">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-primary/80 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              <div ref={bottomRef} className="h-2" />
+            </div>
 
-            {/* AI thinking indicator */}
-            {loading && (
-              <div className="flex justify-start">
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center mr-2 flex-shrink-0 mt-0.5"
-                  style={{ background: "var(--green)" }}
+            <div className="p-4 border-t border-border bg-white space-y-4 relative z-10 rounded-b-[32px]">
+              <div className="flex gap-2">
+                <button 
+                  onClick={toggleVoice} 
+                  className={`w-12 h-12 rounded-[16px] flex flex-shrink-0 items-center justify-center border transition-all ${listening ? 'bg-red-50 border-red-200 text-red-500 scale-105 shadow-md shadow-red-500/10' : 'bg-surface border-border text-muted hover:text-primary hover:border-primary/20'}`}
                 >
-                  <Bot className="w-3 h-3 text-white" />
-                </div>
-                <div
-                  className="bubble-bot flex items-center gap-2"
-                  style={{ fontSize: "13px" }}
+                  {listening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </button>
+                <input 
+                  value={input} onChange={(e) => setInput(e.target.value)} 
+                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  placeholder={lang === 'hi' ? "संदेश टाइप करें..." : "Ask your farm assistant..."}
+                  className="flex-1 bg-surface border border-border rounded-[16px] px-4 py-3 text-sm font-medium text-dark focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted"
+                />
+                <button 
+                  onClick={() => handleSend()} 
+                  className="w-12 h-12 rounded-[16px] bg-primary text-white flex flex-shrink-0 items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20"
+                  disabled={!input.trim() && !listening}
                 >
-                  <Loader2
-                    className="w-3.5 h-3.5 animate-spin"
-                    style={{ color: "var(--muted)" }}
-                  />
-                  <span style={{ color: "var(--muted)" }}>
-                    {lang === "hi" ? "सोच रहा हूं…" : "Thinking…"}
-                  </span>
-                </div>
+                  <Send className="w-5 h-5 ml-1" />
+                </button>
               </div>
-            )}
-
-            {/* Farming question chips — shown only on first open */}
-            {showChips && (
-              <div className="pt-1 space-y-1.5">
-                <p
-                  className="text-[11px] font-body font-bold text-center px-1 mb-2"
-                  style={{ color: "var(--muted)" }}
-                >
-                  {lang === "hi" ? "सुझाए गए सवाल" : "Try asking"}
-                </p>
-                {farmingChips.map((chip) => (
-                  <button
-                    key={chip}
-                    onClick={() => handleSend(chip.replace(/^[^\s]+\s/, ""))}
-                    className="w-full text-left text-[12px] font-body px-3 py-2 rounded-xl transition-colors"
-                    style={{
-                      background: "var(--surface)",
-                      border: "1px solid var(--border)",
-                      color: "var(--dark)",
-                    }}
-                  >
-                    {chip}
+              <div className="flex gap-2">
+                {QUICK_ACTIONS.map(a => (
+                  <button key={a.view} onClick={() => { onNavigate(a.view); setOpen(false); }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-surface border border-border rounded-[12px] text-[10px] font-black uppercase tracking-widest text-muted hover:bg-primary/5 hover:border-primary/20 hover:text-primary transition-all">
+                    <a.icon className="w-3.5 h-3.5" /> {lang === 'hi' ? a.label_hi : a.label}
                   </button>
                 ))}
               </div>
-            )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            <div ref={bottomRef} />
-          </div>
-
-          {/* Quick nav actions */}
-          <div
-            className="px-3 py-3 grid grid-cols-2 gap-2 flex-shrink-0"
-            style={{
-              borderTop: "1px solid var(--border)",
-              background: "var(--surface)",
-            }}
-          >
-            {QUICK_ACTIONS.map((a) => (
-              <button
-                key={a.view}
-                onClick={() => {
-                  onNavigate(a.view);
-                  setOpen(false);
-                }}
-                className="flex items-center justify-center gap-1.5 text-xs font-body font-bold py-2.5 rounded-xl transition-colors hover:bg-black/5"
-                style={{
-                  background: "var(--bg)",
-                  color: "var(--dark)",
-                }}
-              >
-                <span className="text-base">{a.emoji}</span>
-                {lang === "hi" ? a.label_hi : a.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Input */}
-          <div
-            className="flex gap-2 p-3 flex-shrink-0"
-            style={{
-              borderTop: "1px solid var(--border)",
-              background: "var(--surface)",
-            }}
-          >
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) =>
-                e.key === "Enter" && !e.shiftKey && handleSend()
-              }
-              placeholder={
-                lang === "hi"
-                  ? "खेती का सवाल पूछें या नेविगेट करें…"
-                  : "Ask a farming question or navigate…"
-              }
-              className="input text-sm flex-1"
-              style={{ height: "36px", padding: "6px 12px" }}
-              disabled={loading}
-            />
-            <button
-              onClick={toggleVoice}
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
-              style={{
-                background: listening ? "#EF4444" : "var(--bg)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              {listening ? (
-                <MicOff className="w-4 h-4 text-white" />
-              ) : (
-                <Mic className="w-4 h-4" style={{ color: "var(--green)" }} />
-              )}
-            </button>
-            <button
-              onClick={() => handleSend()}
-              disabled={!input.trim() || loading}
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 disabled:opacity-40 transition-all"
-              style={{ background: "var(--green)" }}
-            >
-              <Send className="w-4 h-4 text-white" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Floating button */}
       <button
-        onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-200 active:scale-95"
-        style={{
-          background: open ? "var(--border)" : "var(--green)",
-          boxShadow: "0 4px 20px rgba(30,77,43,0.4)",
-        }}
+        onClick={() => setOpen(!open)}
+        className="fixed bottom-8 right-8 z-50 w-16 h-16 rounded-[24px] bg-primary text-white flex items-center justify-center shadow-xl shadow-primary/30 hover:-translate-y-2 active:translate-y-0 transition-all duration-300 group"
       >
-        {open ? (
-          <X className="w-6 h-6" style={{ color: "var(--dark)" }} />
-        ) : (
-          <MessageCircle className="w-6 h-6 text-white" />
+        {open ? <X className="w-8 h-8" /> : <MessageCircle className="w-8 h-8 group-hover:scale-110 transition-transform duration-300" />}
+        {!open && (
+           <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent border-2 border-white animate-pulse" />
         )}
       </button>
     </>
